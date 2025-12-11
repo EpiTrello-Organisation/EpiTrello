@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/h"
+
+echo "--> Running pre-commit checks…"
+
+npx lint-staged
