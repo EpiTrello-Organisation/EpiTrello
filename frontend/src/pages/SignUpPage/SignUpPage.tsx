@@ -5,16 +5,45 @@ import styles from './SignUpPage.module.css';
 export default function SignUpPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) {
+      setError('Veuillez entrer une adresse e-mail');
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      // const res = await fetch('http://localhost:4000/api/auth/check-email', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email }),
+      // });
+      // const data = await res.json();
+
+      const data = { exists: false }; // set to true to simulate "email exists"
+
+      if (data.exists) {
+        setError('Cet email est déjà utilisé');
+        return;
+      }
+
+      // TODO: l'email n'existe pas -> poursuivre la suite (ex: envoyer code, navigate...)
+      navigate('/verify-code', { state: { email } });
+    } catch (err) {
+      setError('Erreur réseau. Réessayez.');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <main className={styles.container}>
       <h1>Sign up</h1>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          navigate('/verify-code', { state: { email } });
-        }}
-      >
+      <form onSubmit={handleSubmit}>
         <div className={styles.fieldWrapper}>
           <label htmlFor="email" className={styles.label}>
             Email
@@ -28,8 +57,9 @@ export default function SignUpPage() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
+        {error && <p className={styles.error}>{error}</p>}
         <button type="submit" className={styles.button}>
-          Sign up
+          {loading ? 'Checking...' : 'Sign up'}
         </button>
       </form>
     </main>
