@@ -20,22 +20,15 @@ export default function VerifyCodePage() {
     setError(null);
     setLoading(true);
     try {
-      // const res = await fetch('http://localhost:4000/api/auth/verify-code', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, code }),
-      // });
-      // const data = await res.json();
-
       const isValid = true; // accept all codes for now
 
       if (!isValid) {
-        setError("Code invalide");
+        setError('Code invalide');
         return;
       }
 
-      // TODO: le code est valide -> poursuivre la suite (ex: créer compte, navigate...)
-      navigate('/');
+      // Navigate to complete-profile and pass email in state
+      navigate('/complete-profile', { state: { email } });
     } catch (err) {
       setError('Erreur réseau. Réessayez.');
     } finally {
