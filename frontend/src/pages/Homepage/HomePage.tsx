@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import styles from './HomePage.module.css';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -13,26 +14,17 @@ export default function HomePage() {
 
   return (
     <div>
-      <nav
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '10px 20px',
-          borderBottom: '1px solid #ddd',
-        }}
-      >
+      <nav className={styles.nav}>
         <div>Trello</div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className={styles.navButtons}>
           <button onClick={handleSignUpClick}>Sign up</button>
           <button onClick={handleLogInClick}>Log in</button>
         </div>
       </nav>
 
-      <main style={{ padding: '20px' }}>
-        <h1>Welcome to Trello MVP</h1>
+      <main className={styles.main}>
         <p>Homepage très simple pour l'instant.</p>
-      </main>j
+      </main>
     </div>
   );
 }
