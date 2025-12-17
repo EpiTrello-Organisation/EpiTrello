@@ -10,23 +10,12 @@ export default function CompleteProfilePage() {
   // new state
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // submit handler with backend call commented (like SignUp/Verify)
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!fullName.trim()) {
-      setError('Veuillez entrer votre nom complet');
-      return;
-    }
-    if (!password || password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
-      return;
-    }
 
-    setError(null);
-    setLoading(true);
     try {
       // const res = await fetch('http://localhost:4000/api/auth/create-account', {
       //   method: 'POST',
@@ -46,8 +35,6 @@ export default function CompleteProfilePage() {
       navigate('/kanban');
     } catch (err) {
       setError('Erreur réseau. Réessayez.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -89,8 +76,8 @@ export default function CompleteProfilePage() {
 
         {error && <p className={styles.error}>{error}</p>}
 
-        <button type="submit" className={styles.button} disabled={loading}>
-          {loading ? 'Creating...' : 'Continue'}
+        <button type="submit" className={styles.button}>
+          Continue
         </button>
       </form>
     </main>

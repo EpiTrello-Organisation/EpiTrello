@@ -6,19 +6,12 @@ import styles from './VerifyCodePage.module.css';
 export default function VerifyCodePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const email = (location.state as any)?.email || 'user@example.com';
+  const email = (location.state as any)?.email;
 
   const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleVerify() {
-    if (code.length !== 6) {
-      setError('Entrez le code à 6 chiffres');
-      return;
-    }
-    setError(null);
-    setLoading(true);
     try {
       const isValid = true; // accept all codes for now
 
@@ -27,12 +20,9 @@ export default function VerifyCodePage() {
         return;
       }
 
-      // Navigate to complete-profile and pass email in state
       navigate('/complete-profile', { state: { email } });
     } catch (err) {
       setError('Erreur réseau. Réessayez.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -61,10 +51,9 @@ export default function VerifyCodePage() {
       <button
         className={styles.verifyButton}
         type="button"
-        disabled={code.length !== 6 || loading}
         onClick={handleVerify}
       >
-        {loading ? 'Verifying...' : 'Verify'}
+        Verify
       </button>
     </main>
   );

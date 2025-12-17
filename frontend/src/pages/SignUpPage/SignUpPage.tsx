@@ -6,16 +6,10 @@ export default function SignUpPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) {
-      setError('Veuillez entrer une adresse e-mail');
-      return;
-    }
-    setError(null);
-    setLoading(true);
+
     try {
       // const res = await fetch('http://localhost:4000/api/auth/check-email', {
       //   method: 'POST',
@@ -24,7 +18,7 @@ export default function SignUpPage() {
       // });
       // const data = await res.json();
 
-      const data = { exists: false }; // set to true to simulate "email exists"
+      const data = { exists: false }; // simulate "email exists"
 
       if (data.exists) {
         setError('Cet email est déjà utilisé');
@@ -35,8 +29,6 @@ export default function SignUpPage() {
       navigate('/verify-code', { state: { email } });
     } catch (err) {
       setError('Erreur réseau. Réessayez.');
-    } finally {
-      setLoading(false);
     }
   }
 
@@ -59,7 +51,7 @@ export default function SignUpPage() {
         </div>
         {error && <p className={styles.error}>{error}</p>}
         <button type="submit" className={styles.button}>
-          {loading ? 'Checking...' : 'Sign up'}
+          Sign up
         </button>
       </form>
     </main>
