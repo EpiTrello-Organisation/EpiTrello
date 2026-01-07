@@ -1,11 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.core.database import SessionLocal
+from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import UserCreate, UserOut
-from app.core.security import hash_password, verify_password, create_access_token
+from app.schemas.auth import LoginRequest
+
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
 
 def get_db():
     db = SessionLocal()
@@ -13,6 +17,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 @router.post("/register", response_model=UserOut)
 def register(user: UserCreate, db: Session = Depends(get_db)):
@@ -22,7 +27,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         email=user.email,
         username=user.username,
-        password_hash=hash_password(user.password)
+        password_hash=hash_password(user.password),
     )
     db.add(db_user)
     db.commit()
@@ -30,10 +35,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @router.post("/login")
-def login(email: str, password: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == email).first()
-    if not user or not verify_password(password, user.password_hash):
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": str(user.id)})
+    token = create_access_token(subject=str(user.id))
     return {"access_token": token, "token_type": "bearer"}
