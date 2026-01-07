@@ -7,8 +7,20 @@ from app.models.board import Board
 from app.models.user import User
 from app.schemas.board import BoardCreate, BoardOut
 from app.schemas.board import BoardUpdate
+from app.models.board_member import BoardMember
 
 router = APIRouter(prefix="/boards", tags=["Boards"])
+
+@router.get("/", response_model=list[BoardOut])
+def list_boards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return (
+        db.query(Board)
+        .filter(Board.owner_id == current_user.id)
+        .all()
+    )
 
 @router.post("/", response_model=BoardOut, status_code=status.HTTP_201_CREATED)
 def create_board(
@@ -21,20 +33,19 @@ def create_board(
         owner_id=current_user.id,
     )
     db.add(board)
+    db.flush()
+
+    board_member = BoardMember(
+        board_id=board.id,
+        user_id=current_user.id,
+        role="owner",
+    )
+    db.add(board_member)
+
     db.commit()
     db.refresh(board)
-    return board
 
-@router.get("/", response_model=list[BoardOut])
-def list_boards(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return (
-        db.query(Board)
-        .filter(Board.owner_id == current_user.id)
-        .all()
-    )
+    return board
 
 @router.put("/{board_id}", response_model=BoardOut)
 def update_board(
