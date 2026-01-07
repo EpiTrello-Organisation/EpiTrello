@@ -1,12 +1,14 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal
+
 from app.core.config import settings
+from app.core.database import SessionLocal
 from app.models.user import User
 
 security = HTTPBearer()
+
 
 def get_db():
     db = SessionLocal()
@@ -14,6 +16,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
