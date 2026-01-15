@@ -47,7 +47,7 @@ export default function SignUpPage() {
       });
 
       if (res.status === 200) {
-        navigate('/boards');
+        navigate('/login');
       } else if (res.status === 400) {
         setError('Email already used');
       } else {
