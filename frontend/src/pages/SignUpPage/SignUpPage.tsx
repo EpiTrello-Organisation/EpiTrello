@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import styles from './SignUpPage.module.css';
+import { API_BASE_URL } from '@/config/api';
 
 function TrelloLogo() {
   return (
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +26,7 @@ export default function SignUpPage() {
     e.preventDefault();
     setError(null);
 
-    if (!email || !password || !confirmPassword) {
+    if (!email || !username || !password || !confirmPassword) {
       setError('Tous les champs sont requis');
       return;
     }
@@ -37,7 +39,23 @@ export default function SignUpPage() {
       return;
     }
 
-    navigate('/boards');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password }),
+      });
+
+      if (res.status === 200) {
+        navigate('/boards');
+      } else if (res.status === 400) {
+        setError('Email already used');
+      } else {
+        setError('Une erreur est survenue');
+      }
+    } catch (err) {
+      setError('Une erreur est survenue');
+    }
   }
 
   return (
@@ -60,6 +78,18 @@ export default function SignUpPage() {
             className={styles.input}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="username">
+            Username <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="username"
+            type="text"
+            placeholder="Choose a username"
+            className={styles.input}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
 
           <label className={styles.label} htmlFor="password">

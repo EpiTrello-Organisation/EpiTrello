@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './LogInPage.module.css';
+import { API_BASE_URL } from '@/config/api';
 
 function TrelloLogo() {
   return (
@@ -37,8 +38,21 @@ export default function LogInPage() {
       return;
     }
 
-    // TODO: call backend
-    navigate('/boards');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.status === 200) {
+        navigate('/boards');
+      } else {
+        setError('Une erreur est survenue');
+      }
+    } catch (err) {
+      setError('Une erreur est survenue');
+    }
   }
 
   return (
