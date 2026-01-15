@@ -13,45 +13,36 @@ function TrelloLogo() {
   );
 }
 
-function InfoIcon() {
-  return (
-    <span className={styles.infoIcon} aria-hidden="true">
-      i
-    </span>
-  );
-}
-
 export default function LogInPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    if (!email || !password) {
-      setError('Tous les champs sont requis');
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      setError('Invalid email or password');
       return;
     }
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const data: { access_token: string; token_type?: string } = await res.json();
 
-      if (res.status === 200) {
-        navigate('/boards');
-      } else {
-        setError('Une erreur est survenue');
-      }
-    } catch (err) {
-      setError('Une erreur est survenue');
+    if (data?.access_token) {
+      localStorage.setItem('access_token', data.access_token);
+      navigate('/boards');
+    } else {
+      setError('Unexpected server response');
     }
   }
 
@@ -89,17 +80,6 @@ export default function LogInPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-
-          <label className={styles.rememberRow}>
-            <input
-              type="checkbox"
-              className={styles.checkbox}
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-            />
-            <span className={styles.rememberText}>Remember me</span>
-            <InfoIcon />
-          </label>
 
           {error && <p className={styles.error}>{error}</p>}
 
