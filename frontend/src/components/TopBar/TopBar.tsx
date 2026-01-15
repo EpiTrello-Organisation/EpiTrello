@@ -16,7 +16,7 @@ export default function TopBar() {
     <header className={styles.bar}>
       <Link to="/boards" className={styles.trelloButton} aria-label="Go to boards">
         <TrelloMark />
-        <span className={styles.trelloText}>Trello</span>
+        <span className={styles.trelloText}>EpiTrello</span>
       </Link>
 
       <div className={styles.center}>
