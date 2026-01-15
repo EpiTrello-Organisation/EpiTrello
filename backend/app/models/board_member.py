@@ -10,7 +10,7 @@ class BoardMember(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    board_id = Column(UUID(as_uuid=True), ForeignKey("boards.id"), nullable=False)
+    board_id = Column(UUID(as_uuid=True), ForeignKey("boards.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     role = Column(String, nullable=False, default="member")
