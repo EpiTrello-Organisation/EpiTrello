@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <div>
       <nav className={styles.nav}>
-        <div>Trello</div>
+        <div>EpiTrello</div>
         <div className={styles.navButtons}>
           <button onClick={handleSignUpClick}>Sign up</button>
           <button onClick={handleLogInClick}>Log in</button>
