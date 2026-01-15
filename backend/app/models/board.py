@@ -3,7 +3,6 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
-
 from app.core.database import Base
 
 class Board(Base):
@@ -17,4 +16,16 @@ class Board(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    members = relationship("BoardMember", back_populates="board")
+    members = relationship(
+        "BoardMember",
+        back_populates="board",
+        cascade="all, delete-orphan"
+    )
+
+    lists = relationship(
+        "List",
+        back_populates="board",
+        cascade="all, delete-orphan",
+        order_by="List.position",
+    )
+
