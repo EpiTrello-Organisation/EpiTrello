@@ -18,7 +18,7 @@ export async function apiFetch(
 
   if (res.status === 401) {
     logout();
-    window.location.href = '/login';
+    window.location.replace('/login');
     throw new Error('Unauthorized');
   }
 

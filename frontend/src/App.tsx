@@ -7,7 +7,7 @@ import BoardsPage from './pages/BoardsPage/BoardsPage';
 import TemplatesPage from './pages/TemplatesPage/TemplatesPage';
 import './App.css';
 
-import ProtectedRoute from './auth/ProtectexRoute';
+import ProtectedRoute from './auth/ProtectedRoute';
 import { isAuthenticated } from '@/auth/token';
 
 export default function App() {
