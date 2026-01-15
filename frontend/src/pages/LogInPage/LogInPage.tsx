@@ -117,7 +117,7 @@ export default function LogInPage() {
     }
 
     // TODO: call backend
-    navigate('/kanban');
+    navigate('/boards');
   }
 
   return (

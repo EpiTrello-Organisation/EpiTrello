@@ -108,7 +108,7 @@ export default function SignUpPage() {
       return;
     }
 
-    navigate('/kanban');
+    navigate('/boards');
   }
 
   return (
