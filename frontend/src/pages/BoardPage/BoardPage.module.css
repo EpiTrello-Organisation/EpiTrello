@@ -1,0 +1,11 @@
+.page {
+  min-height: 100vh;
+  background: #1f1f21;
+}
+
+.main {
+  height: calc(100vh - 56px);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

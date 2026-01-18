@@ -2,16 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './CreateBoardModal.module.css';
 
 type BackgroundOption =
-  | { id: string; kind: 'image'; value: string } // value = url
-  | { id: string; kind: 'gradient'; value: string }; // value = css gradient
+  | { id: string; kind: 'image'; value: string }
+  | { id: string; kind: 'gradient'; value: string };
 
 type Props = {
   open: boolean;
   onClose: () => void;
+  onCreate: (payload: { title: string }) => void;
 };
 
 const BG_OPTIONS: BackgroundOption[] = [
-  // “Images” (tu pourras remplacer par tes propres URLs plus tard)
   {
     id: 'img-1',
     kind: 'image',
@@ -37,7 +37,6 @@ const BG_OPTIONS: BackgroundOption[] = [
       'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=60',
   },
 
-  // “Couleurs”
   { id: 'g-1', kind: 'gradient', value: 'linear-gradient(135deg, #e6f0ff, #cfe2ff)' },
   { id: 'g-2', kind: 'gradient', value: 'linear-gradient(135deg, #1fb6ff, #2dd4bf)' },
   { id: 'g-3', kind: 'gradient', value: 'linear-gradient(135deg, #0ea5e9, #2563eb)' },
@@ -51,7 +50,7 @@ function styleForBg(bg: BackgroundOption): React.CSSProperties {
   return { backgroundImage: bg.value };
 }
 
-export default function CreateBoardModal({ open, onClose }: Props) {
+export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const [bgId, setBgId] = useState<string>(BG_OPTIONS[0].id);
@@ -199,7 +198,7 @@ export default function CreateBoardModal({ open, onClose }: Props) {
             type="button"
             className={styles.primaryBtn}
             disabled={!canCreate}
-            onClick={() => setTouched(true)}
+            onClick={() => onCreate({ title: title.trim() })}
           >
             Create
           </button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '@/api/fetcher';
 
 import TopBar from '../../components/TopBar/TopBar';
@@ -9,9 +10,8 @@ import CreateBoardModal from '@/components/CreateBoardModal/CreateBoardModal';
 type Board = {
   id: string;
   title: string;
-  // optionnel : si ton API fournit une image/cover
   backgroundUrl?: string | null;
-  background_url?: string | null; // tolérance snake_case si backend python
+  background_url?: string | null;
 };
 
 function getBoardBackgroundUrl(board: Board): string | null {
@@ -22,6 +22,8 @@ export default function BoardsPage() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -50,6 +52,18 @@ export default function BoardsPage() {
     setCreateOpen(true);
   }
 
+  async function handleCreateBoard(payload: { title: string }) {
+    const res = await apiFetch('/api/boards', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    const board = await res.json();
+
+    setCreateOpen(false);
+    navigate(`/boards/${board.id}`);
+  }
+
   return (
     <div className={styles.page}>
       <TopBar />
@@ -66,8 +80,7 @@ export default function BoardsPage() {
                   key={b.id}
                   type="button"
                   className={styles.card}
-                  // plus tard: navigate(`/boards/${b.id}`)
-                  onClick={() => {}}
+                  onClick={() => navigate(`/boards/${b.id}`)}
                 >
                   <div
                     className={styles.preview}
@@ -90,7 +103,11 @@ export default function BoardsPage() {
             </button>
           </div>
         </main>
-        <CreateBoardModal open={createOpen} onClose={() => setCreateOpen(false)} />
+        <CreateBoardModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreate={handleCreateBoard}
+        />
       </div>
     </div>
   );
