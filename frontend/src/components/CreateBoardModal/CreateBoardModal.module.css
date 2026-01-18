@@ -1,0 +1,279 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 72px;
+  z-index: 50;
+}
+
+.panel {
+  width: 300px; /* plus petit */
+  max-width: calc(100vw - 24px);
+  background: #2a2a2d;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.headerTitle {
+  color: #d8d8dd;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.closeButton {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 22px;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.preview {
+  margin: 8px 12px 0;
+  height: 120px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.previewMock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.mockCol {
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mockLine,
+.mockLineShort {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.mockLineShort {
+  width: 70%;
+  opacity: 0.55;
+}
+
+.mockCard {
+  height: 52px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  opacity: 0.9;
+}
+
+.section {
+  padding: 10px 12px 0;
+}
+
+.sectionTitle {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.bgGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bgGrid2 {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.bgTile {
+  height: 38px;
+  border-radius: 8px;
+  border: none;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.bgTileActive {
+  outline: 2px solid rgba(155, 200, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.colorTile {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.colorTileActive {
+  outline: 2px solid rgba(155, 200, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.moreTile {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 16px;
+}
+
+.moreTile:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.label {
+  display: block;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.input {
+  width: 100%;
+  height: 40px;
+  background: #1f1f21;
+  border: 2px solid rgba(145, 180, 235, 0.85);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.inputError {
+  border-color: rgba(145, 180, 235, 0.85);
+}
+
+.inlineError {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wave {
+  font-size: 16px;
+}
+
+.select {
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  padding: 0 10px;
+  outline: none;
+}
+
+.actions {
+  padding: 12px;
+}
+
+.primaryBtn {
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+
+.primaryBtn:disabled {
+  opacity: 1;
+}
+
+.primaryBtn:not(:disabled) {
+  background: rgba(110, 180, 255, 0.9);
+  color: #0b1220;
+  cursor: pointer;
+}
+
+.secondaryBtn {
+  margin-top: 8px;
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.footerNote {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.linkLike {
+  text-decoration: underline;
+  color: rgba(255, 255, 255, 0.5);
+}
