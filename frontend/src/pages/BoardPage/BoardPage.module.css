@@ -1,11 +1,182 @@
 .page {
   min-height: 100vh;
-  background: #1f1f21;
+  background: linear-gradient(135deg, #7b5cff, #f17ac6);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.main {
-  height: calc(100vh - 56px);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+.boardTopBar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: rgba(0, 0, 0, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.boardName {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kanban {
+  height: calc(100vh - 56px - 48px);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.listsRow {
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 14px;
+  min-width: max-content;
+  box-sizing: border-box;
+}
+
+.list {
+  width: 280px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.listRow1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.listTitleButton {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 700;
+
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  flex: 1;
+  text-align: left;
+}
+
+.listTitleButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.listTitleInput {
+  height: 34px;
+  width: 100%;
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(145, 180, 235, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 15px;
+  font-weight: 700;
+
+  padding: 0 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.listRow2 {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.addCardBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 15px;
+  font-weight: 700;
+
+  padding: 10px 10px;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addCardBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.iconSmall {
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.templateBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.templateBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.addListBtn {
+  width: 280px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+
+  font-size: 15px;
+  font-weight: 700;
+
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.addListBtn:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.addListBtn:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.16);
 }
