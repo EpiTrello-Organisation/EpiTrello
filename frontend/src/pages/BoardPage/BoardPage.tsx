@@ -7,45 +7,14 @@ import styles from './BoardPage.module.css';
 import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
 import AddListComposer from '../../components/AddListComposer/AddListComposer';
 
-type Board = {
-  id: string;
-  title: string;
-};
-
-function uid(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  return `tmp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
 export default function BoardPage() {
   const { boardId } = useParams();
 
-  const [board, setBoard] = useState<Board | null>(null);
   const [lists, setLists] = useState<ListModel[]>([]);
   const [loadingLists, setLoadingLists] = useState(true);
 
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadBoard() {
-      if (!boardId) return;
-      try {
-        const res = await apiFetch(`/api/boards/${boardId}`);
-        const data = (await res.json()) as Board;
-        if (!cancelled) setBoard(data);
-      } catch {
-        // 401 handled in fetcher
-      }
-    }
-
-    loadBoard();
-    return () => {
-      cancelled = true;
-    };
-  }, [boardId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,14 +53,27 @@ export default function BoardPage() {
     setNewListTitle('');
   }
 
-  function submitAddList() {
+  async function submitAddList() {
     const title = newListTitle.trim();
     if (!title) return;
+    if (!boardId) return;
 
-    setLists((prev) => [...prev, { id: uid(), title }]);
+    try {
+      const res = await apiFetch(`/api/lists/?board_id=${encodeURIComponent(boardId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
 
-    setNewListTitle('');
-    setIsAddingList(false);
+      const created = (await res.json()) as ListModel;
+
+      setLists((prev) => [...prev, created]);
+
+      setNewListTitle('');
+      setIsAddingList(false);
+    } catch {
+      // 401 handled in fetcher
+    }
   }
 
   return (
@@ -99,7 +81,7 @@ export default function BoardPage() {
       <TopBar />
 
       <div className={styles.boardTopBar}>
-        <div className={styles.boardName}>{board?.title ?? 'Board'}</div>
+        <div className={styles.boardName}>{boardId ?? 'Board'}</div>
       </div>
 
       <main className={styles.kanban} aria-busy={loadingLists}>

@@ -1,0 +1,5936 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+backend/
+  app/
+    api/
+      __init__.py
+      auth.py
+      boards.py
+      cards.py
+      deps.py
+      lists.py
+      router.py
+      users.py
+    core/
+      __init__.py
+      config.py
+      database.py
+      security.py
+    models/
+      __init__.py
+      board_member.py
+      board.py
+      card.py
+      list.py
+      user.py
+    schemas/
+      auth.py
+      board.py
+      card.py
+      list.py
+      user.py
+    main.py
+  migrations/
+    versions/
+      927fd34de516_create_users.py
+      c4d55122373b_add_lists_table.py
+      ca9ff53f0032_create_boards_and_board_members.py
+      d7ba0a18e933_create_users_table.py
+      fdc3fbb0c496_add_cards_table.py
+    env.py
+    README
+    script.py.mako
+  .gitignore
+  alembic.ini
+  docker-compose.yml
+  pyproject.toml
+  requirements.txt
+frontend/
+  .vite/
+    deps/
+      _metadata.json
+      package.json
+  src/
+    api/
+      fetcher.ts
+    auth/
+      ProtectedRoute.tsx
+      token.ts
+    components/
+      AddListComposer/
+        AddListComposer.module.css
+        AddListComposer.tsx
+      BoardList/
+        BoardList.module.css
+        BoardList.tsx
+      CreateBoardModal/
+        CreateBoardModal.module.css
+        CreateBoardModal.tsx
+      EditableText/
+        EditableText.tsx
+      SideMenu/
+        SideMenu.module.css
+        SideMenu.tsx
+      TopBar/
+        TopBar.module.css
+        TopBar.tsx
+    config/
+      api.ts
+    pages/
+      BoardPage/
+        BoardPage.module.css
+        BoardPage.tsx
+      BoardsPage/
+        BoardsPage.module.css
+        BoardsPage.tsx
+      Homepage/
+        HomePage.module.css
+        HomePage.tsx
+      LogInPage/
+        LogInPage.module.css
+        LogInPage.tsx
+      SignUpPage/
+        SignUpPage.module.css
+        SignUpPage.tsx
+      TemplatesPage/
+        TemplatesPage.module.css
+        TemplatesPage.tsx
+    App.css
+    App.tsx
+    main.tsx
+  .eslintignore
+  .gitignore
+  .prettierignore
+  .prettierrc
+  eslint.config.js
+  index.html
+  package.json
+  repo_detail.xml
+  tsconfig.app.json
+  tsconfig.json
+  tsconfig.node.json
+  vite.config.ts
+.gitignore
+package.json
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="backend/app/api/cards.py">
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from uuid import UUID
+
+from app.api.deps import get_db, get_current_user
+from app.models.card import Card
+from app.models.list import List
+from app.models.board_member import BoardMember
+from app.models.user import User
+from app.schemas.card import CardCreate, CardUpdate, CardOut
+
+router = APIRouter(prefix="/cards", tags=["Cards"])
+
+@router.post("/", response_model=CardOut, status_code=status.HTTP_201_CREATED)
+def create_card(
+    list_id: UUID,
+    card_in: CardCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    list_ = db.query(List).filter(List.id == list_id).first()
+    if not list_:
+        raise HTTPException(status_code=404, detail="List not found")
+
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == list_.board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    last_card = (
+        db.query(Card)
+        .filter(Card.list_id == list_id)
+        .order_by(Card.position.desc())
+        .first()
+    )
+
+    position = last_card.position + 1 if last_card else 0
+
+    card = Card(
+        title=card_in.title,
+        description=card_in.description,
+        list_id=list_id,
+        creator_id=current_user.id,
+        position=position,
+    )
+
+    db.add(card)
+    db.commit()
+    db.refresh(card)
+    return card
+
+
+@router.get("/", response_model=list[CardOut])
+def list_cards(
+    list_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    list_ = db.query(List).filter(List.id == list_id).first()
+    if not list_:
+        raise HTTPException(status_code=404, detail="List not found")
+
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == list_.board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    return (
+        db.query(Card)
+        .filter(Card.list_id == list_id)
+        .order_by(Card.position)
+        .all()
+    )
+
+@router.put("/{card_id}", response_model=CardOut)
+def update_card(
+    card_id: UUID,
+    card_in: CardUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    list_ = card.list
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == list_.board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    if card_in.title is not None:
+        card.title = card_in.title
+    if card_in.description is not None:
+        card.description = card_in.description
+
+    db.commit()
+    db.refresh(card)
+    return card
+
+
+@router.delete("/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_card(
+    card_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    card = db.query(Card).filter(Card.id == card_id).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    list_ = card.list
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == list_.board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    db.delete(card)
+    db.commit()
+</file>
+
+<file path="backend/app/api/lists.py">
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from uuid import UUID
+
+from app.api.deps import get_db, get_current_user
+from app.models.list import List
+from app.models.board import Board
+from app.models.board_member import BoardMember
+from app.models.user import User
+from app.schemas.list import ListCreate, ListOut, ListUpdate
+
+router = APIRouter(prefix="/lists", tags=["Lists"])
+
+@router.get("/board/{board_id}", response_model=list[ListOut])
+def get_lists(
+    board_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    is_member = db.query(BoardMember).filter(
+        BoardMember.board_id == board_id,
+        BoardMember.user_id == current_user.id
+    ).first()
+
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not a board member")
+
+    return (
+        db.query(List)
+        .filter(List.board_id == board_id)
+        .order_by(List.position)
+        .all()
+    )
+
+@router.post("/", response_model=ListOut, status_code=status.HTTP_201_CREATED)
+def create_list(
+    list_in: ListCreate,
+    board_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    is_member = db.query(BoardMember).filter(
+        BoardMember.board_id == board_id,
+        BoardMember.user_id == current_user.id
+    ).first()
+
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    max_position = (
+        db.query(List.position)
+        .filter(List.board_id == board_id)
+        .order_by(List.position.desc())
+        .first()
+    )
+
+    position = (max_position[0] + 1) if max_position else 0
+
+    new_list = List(
+        title=list_in.title,
+        position=position,
+        board_id=board_id,
+    )
+
+    db.add(new_list)
+    db.commit()
+    db.refresh(new_list)
+
+    return new_list
+
+@router.put("/{list_id}", response_model=ListOut)
+def update_list(
+    list_id: UUID,
+    list_in: ListUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lst = db.query(List).filter(List.id == list_id).first()
+
+    if not lst:
+        raise HTTPException(status_code=404, detail="List not found")
+
+    is_member = db.query(BoardMember).filter(
+        BoardMember.board_id == lst.board_id,
+        BoardMember.user_id == current_user.id
+    ).first()
+
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    if list_in.title is not None:
+        lst.title = list_in.title
+
+    if list_in.position is not None:
+        lst.position = list_in.position
+
+    db.commit()
+    db.refresh(lst)
+
+    return lst
+
+@router.delete("/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_list(
+    list_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    lst = db.query(List).filter(List.id == list_id).first()
+
+    if not lst:
+        raise HTTPException(status_code=404, detail="List not found")
+
+    is_member = db.query(BoardMember).filter(
+        BoardMember.board_id == lst.board_id,
+        BoardMember.user_id == current_user.id
+    ).first()
+
+    if not is_member:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    db.delete(lst)
+    db.commit()
+</file>
+
+<file path="backend/app/models/card.py">
+from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
+
+from app.core.database import Base
+
+
+class Card(Base):
+    __tablename__ = "cards"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+
+    position = Column(Integer, nullable=False)
+
+    list_id = Column(UUID(as_uuid=True), ForeignKey("lists.id"), nullable=False)
+    creator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    list = relationship("List", back_populates="cards")
+    creator = relationship("User")
+</file>
+
+<file path="backend/app/models/list.py">
+from sqlalchemy import Column, String, ForeignKey, Integer
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+
+from app.core.database import Base
+
+
+class List(Base):
+    __tablename__ = "lists"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    position = Column(Integer, nullable=False)
+
+    board_id = Column(UUID(as_uuid=True), ForeignKey("boards.id"), nullable=False)
+
+    board = relationship("Board", back_populates="lists")
+
+    cards = relationship(
+        "Card",
+        back_populates="list",
+        cascade="all, delete-orphan",
+        order_by="Card.position",
+    )
+</file>
+
+<file path="backend/app/schemas/auth.py">
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+</file>
+
+<file path="backend/app/schemas/board.py">
+from pydantic import BaseModel
+from uuid import UUID
+from datetime import datetime
+
+class BoardBase(BaseModel):
+    title: str
+
+class BoardCreate(BoardBase):
+    pass
+
+class BoardOut(BoardBase):
+    id: UUID
+    owner_id: UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class BoardUpdate(BaseModel):
+    title: str
+</file>
+
+<file path="backend/app/schemas/card.py">
+from pydantic import BaseModel
+from uuid import UUID
+from datetime import datetime
+
+
+class CardBase(BaseModel):
+    title: str
+    description: str | None = None
+
+
+class CardCreate(CardBase):
+    pass
+
+
+class CardUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+
+
+class CardOut(CardBase):
+    id: UUID
+    position: int
+    list_id: UUID
+    creator_id: UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+</file>
+
+<file path="backend/app/schemas/list.py">
+from uuid import UUID
+from pydantic import BaseModel
+
+
+class ListBase(BaseModel):
+    title: str
+
+
+class ListCreate(ListBase):
+    pass
+
+
+class ListUpdate(BaseModel):
+    title: str | None = None
+    position: int | None = None
+
+
+class ListOut(ListBase):
+    id: UUID
+    position: int
+    board_id: UUID
+
+    class Config:
+        from_attributes = True
+</file>
+
+<file path="backend/migrations/versions/c4d55122373b_add_lists_table.py">
+"""add lists table
+
+Revision ID: c4d55122373b
+Revises: ca9ff53f0032
+Create Date: 2026-01-15 11:01:04.122240
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = 'c4d55122373b'
+down_revision: Union[str, Sequence[str], None] = 'ca9ff53f0032'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('lists',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('title', sa.String(), nullable=False),
+    sa.Column('position', sa.Integer(), nullable=False),
+    sa.Column('board_id', sa.UUID(), nullable=False),
+    sa.ForeignKeyConstraint(['board_id'], ['boards.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.drop_constraint(op.f('board_members_board_id_fkey'), 'board_members', type_='foreignkey')
+    op.create_foreign_key(None, 'board_members', 'boards', ['board_id'], ['id'], ondelete='CASCADE')
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_constraint(None, 'board_members', type_='foreignkey')
+    op.create_foreign_key(op.f('board_members_board_id_fkey'), 'board_members', 'boards', ['board_id'], ['id'])
+    op.drop_table('lists')
+    # ### end Alembic commands ###
+</file>
+
+<file path="backend/migrations/versions/ca9ff53f0032_create_boards_and_board_members.py">
+"""create boards and board_members
+
+Revision ID: ca9ff53f0032
+Revises: d7ba0a18e933
+Create Date: 2025-12-17 12:30:31.503545
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = 'ca9ff53f0032'
+down_revision: Union[str, Sequence[str], None] = 'd7ba0a18e933'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('boards',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('title', sa.String(), nullable=False),
+    sa.Column('owner_id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['owner_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('board_members',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('board_id', sa.UUID(), nullable=False),
+    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('role', sa.String(), nullable=False),
+    sa.ForeignKeyConstraint(['board_id'], ['boards.id'], ),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('board_members')
+    op.drop_table('boards')
+    # ### end Alembic commands ###
+</file>
+
+<file path="backend/migrations/versions/fdc3fbb0c496_add_cards_table.py">
+"""add cards table
+
+Revision ID: fdc3fbb0c496
+Revises: c4d55122373b
+Create Date: 2026-01-15 11:10:20.079992
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision: str = 'fdc3fbb0c496'
+down_revision: Union[str, Sequence[str], None] = 'c4d55122373b'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table('cards',
+    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('title', sa.String(), nullable=False),
+    sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('position', sa.Integer(), nullable=False),
+    sa.Column('list_id', sa.UUID(), nullable=False),
+    sa.Column('creator_id', sa.UUID(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['creator_id'], ['users.id'], ),
+    sa.ForeignKeyConstraint(['list_id'], ['lists.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('cards')
+    # ### end Alembic commands ###
+</file>
+
+<file path="backend/migrations/README">
+Generic single-database configuration.
+</file>
+
+<file path="backend/migrations/script.py.mako">
+"""${message}
+
+Revision ID: ${up_revision}
+Revises: ${down_revision | comma,n}
+Create Date: ${create_date}
+
+"""
+from typing import Sequence, Union
+
+from alembic import op
+import sqlalchemy as sa
+${imports if imports else ""}
+
+# revision identifiers, used by Alembic.
+revision: str = ${repr(up_revision)}
+down_revision: Union[str, Sequence[str], None] = ${repr(down_revision)}
+branch_labels: Union[str, Sequence[str], None] = ${repr(branch_labels)}
+depends_on: Union[str, Sequence[str], None] = ${repr(depends_on)}
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    ${upgrades if upgrades else "pass"}
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    ${downgrades if downgrades else "pass"}
+</file>
+
+<file path="backend/.gitignore">
+########################
+# 🐍 Python
+########################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.env
+.env.*
+.venv/
+venv/
+ENV/
+env/
+
+########################
+# 🧪 Python tools
+########################
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+########################
+# 🗃️ Alembic
+########################
+alembic/versions/__pycache__/
+
+########################
+# 🐳 Docker
+########################
+docker-compose.override.yml
+
+########################
+# 🗄️ PostgreSQL
+########################
+*.log
+pgdata/
+postgres_data/
+
+########################
+# 🧠 IDE / OS
+########################
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+########################
+# 📄 Logs
+########################
+logs/
+*.log
+
+########################
+# 🔐 Secrets
+########################
+*.pem
+*.key
+</file>
+
+<file path="backend/docker-compose.yml">
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: trello_db
+    environment:
+      POSTGRES_USER: trello
+      POSTGRES_PASSWORD: trello
+      POSTGRES_DB: trello
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+</file>
+
+<file path="backend/pyproject.toml">
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+strict = false
+</file>
+
+<file path="frontend/.vite/deps/_metadata.json">
+{
+  "hash": "9669ca46",
+  "configHash": "8f2ef9a0",
+  "lockfileHash": "bbccd795",
+  "browserHash": "fb7b8a83",
+  "optimized": {},
+  "chunks": {}
+}
+</file>
+
+<file path="frontend/.vite/deps/package.json">
+{
+  "type": "module"
+}
+</file>
+
+<file path="frontend/src/auth/ProtectedRoute.tsx">
+import { Navigate } from 'react-router-dom';
+import { isAuthenticated } from './token';
+import type { JSX } from 'react/jsx-dev-runtime';
+
+export default function ProtectedRoute({ children }: { children: JSX.Element }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+</file>
+
+<file path="frontend/src/auth/token.ts">
+export function getAccessToken(): string | null {
+  return localStorage.getItem('access_token');
+}
+
+export function isAuthenticated(): boolean {
+  return !!getAccessToken();
+}
+
+export function logout() {
+  localStorage.removeItem('access_token');
+}
+</file>
+
+<file path="frontend/src/components/AddListComposer/AddListComposer.module.css">
+.addListBtn {
+  width: 280px;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+
+  font-size: 15px;
+  font-weight: 700;
+
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.addListBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.addListComposer {
+  width: 280px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.addListInput {
+  width: 100%;
+  height: 32px;
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(145, 180, 235, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 16px;
+  font-weight: 700;
+
+  padding: 0 8px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.addListActions {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addListPrimary {
+  height: 34px;
+  padding: 0 16px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: rgba(110, 180, 255, 0.9);
+  color: #0b1220;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.addListPrimary:hover {
+  background: rgba(110, 180, 255, 0.96);
+}
+
+.addListCancel {
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+}
+
+.addListCancel:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+</file>
+
+<file path="frontend/src/components/AddListComposer/AddListComposer.tsx">
+import { useEffect, useRef } from 'react';
+import styles from './AddListComposer.module.css';
+
+function IconX() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+      <path
+        d="M7 7l10 10M17 7L7 17"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export default function AddListComposer({
+  open,
+  value,
+  onOpen,
+  onChange,
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  value: string;
+  onOpen: () => void;
+  onChange: (v: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => inputRef.current?.focus());
+  }, [open]);
+
+  if (!open) {
+    return (
+      <button type="button" className={styles.addListBtn} onClick={onOpen}>
+        + <span>Add another list</span>
+      </button>
+    );
+  }
+
+  return (
+    <div className={styles.addListComposer}>
+      <input
+        ref={inputRef}
+        className={styles.addListInput}
+        placeholder="Enter list name..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onSubmit();
+          if (e.key === 'Escape') onCancel();
+        }}
+        aria-label="List name"
+      />
+
+      <div className={styles.addListActions}>
+        <button type="button" className={styles.addListPrimary} onClick={onSubmit}>
+          Add list
+        </button>
+
+        <button
+          type="button"
+          className={styles.addListCancel}
+          onClick={onCancel}
+          aria-label="Cancel"
+        >
+          <IconX />
+        </button>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/components/BoardList/BoardList.module.css">
+.list {
+  width: 280px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.listRow1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.listTitleButton {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 700;
+
+  padding: 6px 8px;
+  border-radius: 10px;
+
+  flex: 1;
+  text-align: left;
+}
+
+.listTitleButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.listTitleInput {
+  height: 34px;
+  width: 100%;
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(145, 180, 235, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 15px;
+  font-weight: 700;
+
+  padding: 0 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.listRow2 {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.addCardBtn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 15px;
+  font-weight: 700;
+
+  padding: 8px 8px;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.addCardBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.iconSmall {
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.templateBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.templateBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+</file>
+
+<file path="frontend/src/components/BoardList/BoardList.tsx">
+import styles from './BoardList.module.css';
+import EditableText from '../EditableText/EditableText';
+
+export type ListModel = {
+  id: string;
+  title: string;
+};
+
+function IconDots() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+      <circle cx="6" cy="12" r="1.7" fill="#fff" />
+      <circle cx="12" cy="12" r="1.7" fill="#fff" />
+      <circle cx="18" cy="12" r="1.7" fill="#fff" />
+    </svg>
+  );
+}
+
+function IconTemplate() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.iconSmall}>
+      <path
+        d="M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M9 8h6M9 12h6M9 16h4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export default function BoardList({
+  list,
+  onRename,
+}: {
+  list: ListModel;
+  onRename: (listId: string, nextTitle: string) => void;
+}) {
+  return (
+    <section className={styles.list}>
+      <div className={styles.listRow1}>
+        <EditableText
+          value={list.title}
+          ariaLabel="Edit list title"
+          className={styles.listTitleButton}
+          inputClassName={styles.listTitleInput}
+          onChange={(v) => onRename(list.id, v)}
+        />
+
+        <button type="button" className={styles.iconBtn} aria-label="List menu">
+          <IconDots />
+        </button>
+      </div>
+
+      <div className={styles.listRow2}>
+        <button type="button" className={styles.addCardBtn}>
+          + <span>Add a card</span>
+        </button>
+
+        <button
+          type="button"
+          className={styles.templateBtn}
+          aria-label="Create from template"
+          title="Create from a template..."
+        >
+          <IconTemplate />
+        </button>
+      </div>
+    </section>
+  );
+}
+</file>
+
+<file path="frontend/src/components/CreateBoardModal/CreateBoardModal.module.css">
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 72px;
+  z-index: 50;
+}
+
+.panel {
+  width: 300px; /* plus petit */
+  max-width: calc(100vw - 24px);
+  background: #2a2a2d;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.headerTitle {
+  color: #d8d8dd;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.closeButton {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 22px;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.preview {
+  margin: 8px 12px 0;
+  height: 120px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.previewMock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.mockCol {
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mockLine,
+.mockLineShort {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.mockLineShort {
+  width: 70%;
+  opacity: 0.55;
+}
+
+.mockCard {
+  height: 52px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  opacity: 0.9;
+}
+
+.section {
+  padding: 10px 12px 0;
+}
+
+.sectionTitle {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.bgGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bgGrid2 {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.bgTile {
+  height: 38px;
+  border-radius: 8px;
+  border: none;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.bgTileActive {
+  outline: 2px solid rgba(155, 200, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.colorTile {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.colorTileActive {
+  outline: 2px solid rgba(155, 200, 255, 0.85);
+  outline-offset: 2px;
+}
+
+.moreTile {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 16px;
+}
+
+.moreTile:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.label {
+  display: block;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.input {
+  width: 100%;
+  height: 40px;
+  background: #1f1f21;
+  border: 2px solid rgba(145, 180, 235, 0.85);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.inputError {
+  border-color: rgba(145, 180, 235, 0.85);
+}
+
+.inlineError {
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.wave {
+  font-size: 16px;
+}
+
+.select {
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  padding: 0 10px;
+  outline: none;
+}
+
+.actions {
+  padding: 12px;
+}
+
+.primaryBtn {
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+
+.primaryBtn:disabled {
+  opacity: 1;
+}
+
+.primaryBtn:not(:disabled) {
+  background: rgba(110, 180, 255, 0.9);
+  color: #0b1220;
+  cursor: pointer;
+}
+
+.secondaryBtn {
+  margin-top: 8px;
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondaryBtn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.footerNote {
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.linkLike {
+  text-decoration: underline;
+  color: rgba(255, 255, 255, 0.5);
+}
+</file>
+
+<file path="frontend/src/components/EditableText/EditableText.tsx">
+import { useEffect, useState } from 'react';
+
+type Props = {
+  value: string;
+  className: string;
+  inputClassName: string;
+  onChange: (v: string) => void;
+  ariaLabel: string;
+};
+
+export default function EditableText({ value, className, inputClassName, onChange, ariaLabel }: Props) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => setDraft(value), [value]);
+
+  function commit() {
+    const next = draft.trim();
+    if (next.length > 0 && next !== value) onChange(next);
+    setEditing(false);
+  }
+
+  if (!editing) {
+    return (
+      <button type="button" className={className} onClick={() => setEditing(true)} aria-label={ariaLabel}>
+        {value}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      className={inputClassName}
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') setEditing(false);
+      }}
+      aria-label={ariaLabel}
+      autoFocus
+    />
+  );
+}
+</file>
+
+<file path="frontend/src/components/SideMenu/SideMenu.module.css">
+.container {
+  width: 18%;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 18px 16px;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.78);
+  background: transparent;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.active {
+  background: rgba(103, 157, 241, 0.22);
+}
+
+.active .label {
+  color: #679df1;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  opacity: 0.9;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.svg {
+  width: 22px;
+  height: 22px;
+  fill: rgba(255, 255, 255, 0.7);
+}
+
+.svgInner {
+  fill: #1f1f21;
+  opacity: 0.9;
+}
+
+.active .svg {
+  fill: #679df1;
+}
+</file>
+
+<file path="frontend/src/components/SideMenu/SideMenu.tsx">
+import { NavLink } from 'react-router-dom';
+import styles from './SideMenu.module.css';
+
+type ItemProps = {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+};
+
+function Item({ to, label, icon }: ItemProps) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) => `${styles.item} ${isActive ? styles.active : ''}`}
+    >
+      <span className={styles.icon} aria-hidden="true">
+        {icon}
+      </span>
+      <span className={styles.label}>{label}</span>
+    </NavLink>
+  );
+}
+
+function BoardsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.svg} aria-hidden="true">
+      <rect x="4" y="5" width="16" height="14" rx="3" />
+      <rect x="7" y="8" width="5" height="8" rx="1.3" className={styles.svgInner} />
+      <rect x="13" y="8" width="4" height="5.5" rx="1.3" className={styles.svgInner} />
+    </svg>
+  );
+}
+
+function TemplatesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.svg} aria-hidden="true">
+      <rect x="4" y="6" width="16" height="14" rx="3" />
+      <rect x="7" y="3" width="3" height="5" rx="1" />
+      <rect x="14" y="3" width="3" height="5" rx="1" />
+      <rect x="7" y="10" width="10" height="2.2" rx="1.1" className={styles.svgInner} />
+      <rect x="7" y="14" width="7" height="2.2" rx="1.1" className={styles.svgInner} />
+    </svg>
+  );
+}
+
+export default function SideMenu() {
+  return (
+    <aside className={styles.container} aria-label="Sidebar">
+      <nav className={styles.nav}>
+        <Item to="/boards" label="Boards" icon={<BoardsIcon />} />
+        <Item to="/templates" label="Templates" icon={<TemplatesIcon />} />
+      </nav>
+    </aside>
+  );
+}
+</file>
+
+<file path="frontend/src/config/api.ts">
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+</file>
+
+<file path="frontend/src/pages/Homepage/HomePage.module.css">
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+.navButtons {
+  display: flex;
+  gap: 8px;
+}
+.main {
+  padding: 20px;
+}
+</file>
+
+<file path="frontend/src/pages/TemplatesPage/TemplatesPage.module.css">
+.page {
+  min-height: 100vh;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.shell {
+  display: flex;
+  min-height: calc(100vh - 56px);
+  background: #1f1f21;
+}
+
+.main {
+  flex: 1;
+  padding: 18px 16px;
+  background: #1f1f21;
+}
+</file>
+
+<file path="frontend/.eslintignore">
+dist/
+node_modules/
+</file>
+
+<file path="frontend/.prettierignore">
+dist/
+node_modules/
+coverage/
+</file>
+
+<file path="frontend/.prettierrc">
+{
+  "printWidth": 100,
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="frontend/eslint.config.js">
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+
+import importPlugin from "eslint-plugin-import";
+import unusedImports from "eslint-plugin-unused-imports";
+import jsonc from "eslint-plugin-jsonc";
+import yml from "eslint-plugin-yml";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+
+import jsoncParser from "jsonc-eslint-parser";
+import yamlParser from "yaml-eslint-parser";
+
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores(["dist", "node_modules"]),
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
+
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "module",
+      ecmaFeatures: { jsx: true },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+      parser: tseslint.parser,
+    },
+
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+      import: importPlugin,
+      "unused-imports": unusedImports,
+      "react-hooks": reactHooks,
+    },
+
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      reactHooks.configs.recommended,
+      reactRefresh.configs.vite,
+      "eslint-config-prettier",
+    ],
+
+    rules: {
+      "unused-imports/no-unused-imports": "warn",
+      "no-console": "off",
+    },
+  },
+
+  {
+    files: ["*.json", "*.jsonc", "*.json5"],
+
+    languageOptions: {
+      parser: jsoncParser,
+    },
+
+    plugins: {
+      jsonc,
+    },
+
+    extends: ["plugin:jsonc/recommended-with-jsonc"],
+
+    rules: {
+      "jsonc/array-bracket-spacing": ["error", "never"],
+      "jsonc/object-curly-spacing": ["error", "always"],
+      "jsonc/key-spacing": [
+        "error",
+        { beforeColon: false, afterColon: true },
+      ],
+      "jsonc/quote-props": ["error", "as-needed"],
+    },
+  },
+
+  {
+    files: ["*.yml", "*.yaml"],
+
+    languageOptions: {
+      parser: yamlParser,
+    },
+
+    plugins: {
+      yml,
+    },
+
+    extends: ["plugin:yml/standard"],
+
+    rules: {
+      "yml/indent": ["error", 2],
+      "yml/no-empty-document": "error",
+      "yml/quotes": ["error", { prefer: "single", avoidEscape: false }],
+    },
+  },
+]);
+</file>
+
+<file path="frontend/repo_detail.xml">
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.vite/
+  deps/
+    _metadata.json
+    package.json
+src/
+  api/
+    fetcher.ts
+  auth/
+    ProtectexRoute.tsx
+    token.ts
+  components/
+    SideMenu/
+      SideMenu.module.css
+      SideMenu.tsx
+    TopBar/
+      TopBar.module.css
+      TopBar.tsx
+  config/
+    api.ts
+  pages/
+    BoardsPage/
+      BoardsPage.module.css
+      BoardsPage.tsx
+    Homepage/
+      HomePage.module.css
+      HomePage.tsx
+    LogInPage/
+      LogInPage.module.css
+      LogInPage.tsx
+    SignUpPage/
+      SignUpPage.module.css
+      SignUpPage.tsx
+    TemplatesPage/
+      TemplatesPage.module.css
+      TemplatesPage.tsx
+  App.css
+  App.tsx
+  main.tsx
+.eslintignore
+.gitignore
+.prettierignore
+.prettierrc
+eslint.config.js
+index.html
+package.json
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".vite/deps/_metadata.json">
+{
+  "hash": "9669ca46",
+  "configHash": "8f2ef9a0",
+  "lockfileHash": "bbccd795",
+  "browserHash": "fb7b8a83",
+  "optimized": {},
+  "chunks": {}
+}
+</file>
+
+<file path=".vite/deps/package.json">
+{
+  "type": "module"
+}
+</file>
+
+<file path="src/api/fetcher.ts">
+import { getAccessToken, logout } from '@/auth/token';
+import { API_BASE_URL } from '@/config/api';
+
+export async function apiFetch(
+  path: string,
+  options: RequestInit = {}
+) {
+  const token = getAccessToken();
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+
+  if (res.status === 401) {
+    logout();
+    window.location.href = '/login';
+    throw new Error('Unauthorized');
+  }
+
+  return res;
+}
+</file>
+
+<file path="src/auth/ProtectexRoute.tsx">
+import { Navigate } from 'react-router-dom';
+import { isAuthenticated } from './token';
+import type { JSX } from 'react/jsx-dev-runtime';
+
+export default function ProtectedRoute({ children }: { children: JSX.Element }) {
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+</file>
+
+<file path="src/auth/token.ts">
+export function getAccessToken(): string | null {
+  return localStorage.getItem('access_token');
+}
+
+export function isAuthenticated(): boolean {
+  return !!getAccessToken();
+}
+
+export function logout() {
+  localStorage.removeItem('access_token');
+}
+</file>
+
+<file path="src/components/SideMenu/SideMenu.module.css">
+.container {
+  width: 18%;
+  min-width: 220px;
+  max-width: 320px;
+  padding: 18px 16px;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.78);
+  background: transparent;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.active {
+  background: rgba(103, 157, 241, 0.22);
+}
+
+.active .label {
+  color: #679df1;
+}
+
+.icon {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  opacity: 0.9;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+.svg {
+  width: 22px;
+  height: 22px;
+  fill: rgba(255, 255, 255, 0.7);
+}
+
+.svgInner {
+  fill: #1f1f21;
+  opacity: 0.9;
+}
+
+.active .svg {
+  fill: #679df1;
+}
+</file>
+
+<file path="src/components/SideMenu/SideMenu.tsx">
+import { NavLink } from 'react-router-dom';
+import styles from './SideMenu.module.css';
+
+type ItemProps = {
+  to: string;
+  label: string;
+  icon: React.ReactNode;
+};
+
+function Item({ to, label, icon }: ItemProps) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) => `${styles.item} ${isActive ? styles.active : ''}`}
+    >
+      <span className={styles.icon} aria-hidden="true">
+        {icon}
+      </span>
+      <span className={styles.label}>{label}</span>
+    </NavLink>
+  );
+}
+
+function BoardsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.svg} aria-hidden="true">
+      <rect x="4" y="5" width="16" height="14" rx="3" />
+      <rect x="7" y="8" width="5" height="8" rx="1.3" className={styles.svgInner} />
+      <rect x="13" y="8" width="4" height="5.5" rx="1.3" className={styles.svgInner} />
+    </svg>
+  );
+}
+
+function TemplatesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className={styles.svg} aria-hidden="true">
+      <rect x="4" y="6" width="16" height="14" rx="3" />
+      <rect x="7" y="3" width="3" height="5" rx="1" />
+      <rect x="14" y="3" width="3" height="5" rx="1" />
+      <rect x="7" y="10" width="10" height="2.2" rx="1.1" className={styles.svgInner} />
+      <rect x="7" y="14" width="7" height="2.2" rx="1.1" className={styles.svgInner} />
+    </svg>
+  );
+}
+
+export default function SideMenu() {
+  return (
+    <aside className={styles.container} aria-label="Sidebar">
+      <nav className={styles.nav}>
+        <Item to="/boards" label="Boards" icon={<BoardsIcon />} />
+        <Item to="/templates" label="Templates" icon={<TemplatesIcon />} />
+      </nav>
+    </aside>
+  );
+}
+</file>
+
+<file path="src/components/TopBar/TopBar.module.css">
+.bar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trelloButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #ffffff; /* texte blanc */
+}
+
+.trelloButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.trelloText {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.trelloIcon {
+  width: 22px;
+  height: 22px;
+  fill: #ffffff;
+  opacity: 0.95;
+}
+
+.trelloIconInner {
+  fill: #1f1f21;
+  opacity: 0.9;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.search {
+  width: min(520px, 100%);
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.search::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.search:focus {
+  outline: none;
+  border-color: rgba(103, 157, 241, 0.8);
+  box-shadow: 0 0 0 2px rgba(103, 157, 241, 0.25);
+}
+
+.createButton {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #679df1; /* background create button */
+  color: #1f1f21; /* texte create button */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.createButton:hover {
+  filter: brightness(1.03);
+}
+
+.profileButton {
+  width: 28px;
+  height: 28px;
+  border: none;
+  padding: 0;
+  line-height: 0;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.profileButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.avatar {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+
+.profileWrapper {
+  position: relative;
+}
+
+.profileMenu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+
+.themeMenu {
+  position: absolute;
+  top: 0;
+  right: 170px;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+</file>
+
+<file path="src/components/TopBar/TopBar.tsx">
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { logout } from '@/auth/token';
+import styles from './TopBar.module.css';
+
+function TrelloMark() {
+  return (
+    <svg className={styles.trelloIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <rect x="7" y="7" width="4.5" height="9" rx="1.2" className={styles.trelloIconInner} />
+      <rect x="12.5" y="7" width="4.5" height="6.5" rx="1.2" className={styles.trelloIconInner} />
+    </svg>
+  );
+}
+
+export default function TopBar() {
+  const navigate = useNavigate();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const themeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+
+      const wrapperEl = wrapperRef.current;
+      const themeEl = themeRef.current;
+
+      const clickedInWrapper = !!wrapperEl && wrapperEl.contains(target);
+      const clickedInTheme = !!themeEl && themeEl.contains(target);
+
+      if (!clickedInWrapper && !clickedInTheme) {
+        setMenuOpen(false);
+        setThemeOpen(false);
+      }
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [menuOpen]);
+
+  return (
+    <header className={styles.bar}>
+      <Link to="/boards" className={styles.trelloButton} aria-label="Go to boards">
+        <TrelloMark />
+        <span className={styles.trelloText}>EpiTrello</span>
+      </Link>
+
+      <div className={styles.center}>
+        <input
+          className={styles.search}
+          type="search"
+          placeholder="Search"
+          aria-label="Search boards"
+        />
+        <button type="button" className={styles.createButton}>
+          Create
+        </button>
+      </div>
+
+      <div className={styles.profileWrapper} ref={wrapperRef}>
+        <button
+          type="button"
+          className={styles.profileButton}
+          aria-label="Profile"
+          onClick={() => {
+            setMenuOpen((v) => !v);
+            setThemeOpen(false);
+          }}
+        >
+          <span className={styles.avatar} />
+        </button>
+
+        {menuOpen && (
+          <div className={styles.profileMenu}>
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={() => setThemeOpen((v) => !v)}
+            >
+              Theme
+            </button>
+
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+            >
+              Log Out
+            </button>
+
+            {themeOpen && (
+              <div className={styles.themeMenu} ref={themeRef}>
+                <button type="button" className={styles.menuItem}>
+                  Light
+                </button>
+                <button type="button" className={styles.menuItem}>
+                  Dark
+                </button>
+                <button type="button" className={styles.menuItem}>
+                  Match system
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+</file>
+
+<file path="src/config/api.ts">
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+</file>
+
+<file path="src/pages/BoardsPage/BoardsPage.module.css">
+.page {
+  min-height: 100vh;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.shell {
+  display: flex;
+  min-height: calc(100vh - 56px); /* topbar = 56px */
+  background: #1f1f21; /* même fond => pas de séparation visible */
+}
+
+.main {
+  flex: 1;
+  padding: 18px 16px;
+  background: #1f1f21; /* identique au sidebar */
+}
+</file>
+
+<file path="src/pages/BoardsPage/BoardsPage.tsx">
+import { useEffect } from 'react';
+import { apiFetch } from '@/api/fetcher';
+
+import TopBar from '../../components/TopBar/TopBar';
+import SideMenu from '../../components/SideMenu/SideMenu';
+import styles from './BoardsPage.module.css';
+
+export default function BoardsPage() {
+  useEffect(() => {
+    apiFetch('/api/me').catch(() => {
+      // Error handled in fetcher
+    });
+  }, []);
+
+  return (
+    <div className={styles.page}>
+      <TopBar />
+      <div className={styles.shell}>
+        <SideMenu />
+        <main className={styles.main}>{/* vide */}</main>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/pages/Homepage/HomePage.module.css">
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+}
+.navButtons {
+  display: flex;
+  gap: 8px;
+}
+.main {
+  padding: 20px;
+}
+</file>
+
+<file path="src/pages/Homepage/HomePage.tsx">
+import { useNavigate } from 'react-router-dom';
+import styles from './HomePage.module.css';
+
+export default function HomePage() {
+  const navigate = useNavigate();
+
+  function handleSignUpClick() {
+    navigate('/signup');
+  }
+
+  function handleLogInClick() {
+    navigate('/login');
+  }
+
+  return (
+    <div>
+      <nav className={styles.nav}>
+        <div>EpiTrello</div>
+        <div className={styles.navButtons}>
+          <button onClick={handleSignUpClick}>Sign up</button>
+          <button onClick={handleLogInClick}>Log in</button>
+        </div>
+      </nav>
+
+      <main className={styles.main}>
+        <p>Homepage très simple pour l'instant.</p>
+      </main>
+    </div>
+  );
+}
+</file>
+
+<file path="src/pages/LogInPage/LogInPage.module.css">
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafbfc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.trelloIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: 40px;
+  font-weight: 400;
+  color: #091e42;
+  line-height: 1;
+  margin: 0;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #0052cc;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 20px 0 16px;
+  color: #172b4d;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #5e6c84;
+}
+
+.required {
+  color: #de350b;
+  font-weight: 700;
+}
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+  margin-bottom: 12px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4c9aff;
+  box-shadow: 0 0 0 2px rgba(76, 154, 255, 0.3);
+}
+
+.rememberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 14px;
+  user-select: none;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.rememberText {
+  font-size: 13px;
+  color: #172b4d;
+}
+
+.infoIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #6554c0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  height: 40px;
+  margin-top: 2px;
+  background: #0052cc;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: #0065ff;
+}
+
+.error {
+  font-size: 12px;
+  color: #de350b;
+  margin: 0 0 10px;
+}
+
+.linksRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 14px;
+  font-size: 12px;
+}
+
+.link {
+  color: #6554c0;
+  text-decoration: underline;
+}
+
+.dot {
+  color: #6b778c;
+}
+
+.linksRow,
+.linksRow:visited {
+  color: #0d67e4;
+}
+</file>
+
+<file path="src/pages/LogInPage/LogInPage.tsx">
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styles from './LogInPage.module.css';
+import { API_BASE_URL } from '@/config/api';
+
+function TrelloLogo() {
+  return (
+    <svg className={styles.trelloIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="3" fill="#0052CC" />
+      <rect x="6" y="6" width="4" height="10" rx="1" fill="#FFFFFF" />
+      <rect x="14" y="6" width="4" height="6" rx="1" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+export default function LogInPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      setError('Invalid email or password');
+      return;
+    }
+
+    const data: { access_token: string; token_type?: string } = await res.json();
+
+    if (data?.access_token) {
+      localStorage.setItem('access_token', data.access_token);
+      navigate('/boards');
+    } else {
+      setError('Unexpected server response');
+    }
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.logoRow}>
+          <TrelloLogo />
+          <h1 className={styles.logoText}>EpiTrello</h1>
+        </div>
+
+        <h2 className={styles.title}>Log in to continue</h2>
+
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <label className={styles.label} htmlFor="email">
+            Email <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            className={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="password">
+            Password <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            className={styles.input}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {error && <p className={styles.error}>{error}</p>}
+
+          <button type="submit" className={styles.primaryButton}>
+            Continue
+          </button>
+        </form>
+
+        <p className={styles.linksRow}>
+          <a href="/signup">Don't have an account? Sign up</a>
+        </p>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/pages/SignUpPage/SignUpPage.module.css">
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafbfc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.trelloIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: 40px;
+  font-weight: 400;
+  color: #091e42;
+  line-height: 1;
+  margin: 0;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #0052cc;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 20px 0 16px;
+  color: #172b4d;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #5e6c84;
+}
+
+.required {
+  color: #de350b;
+  font-weight: 700;
+}
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+  margin-bottom: 16px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4c9aff;
+  box-shadow: 0 0 0 2px rgba(76, 154, 255, 0.3);
+}
+
+.primaryButton {
+  height: 40px;
+  margin-top: 8px;
+  background: #0052cc;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: #0065ff;
+}
+
+.error {
+  font-size: 12px;
+  color: #de350b;
+  margin-bottom: 12px;
+}
+
+.linksRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 14px;
+  font-size: 12px;
+}
+
+.link {
+  color: #6554c0;
+  text-decoration: underline;
+}
+
+.dot {
+  color: #6b778c;
+}
+
+.linksRow,
+.linksRow:visited {
+  color: #0d67e4;
+}
+</file>
+
+<file path="src/pages/SignUpPage/SignUpPage.tsx">
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import styles from './SignUpPage.module.css';
+import { API_BASE_URL } from '@/config/api';
+
+function TrelloLogo() {
+  return (
+    <svg className={styles.trelloIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="3" fill="#0052CC" />
+      <rect x="6" y="6" width="4" height="10" rx="1" fill="#FFFFFF" />
+      <rect x="14" y="6" width="4" height="6" rx="1" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+export default function SignUpPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!email || !username || !password || !confirmPassword) {
+      setError('Tous les champs sont requis');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password }),
+      });
+
+      if (res.status === 200) {
+        navigate('/login');
+      } else if (res.status === 400) {
+        setError('Email already used');
+      } else {
+        setError('Une erreur est survenue');
+      }
+    } catch (err) {
+      setError('Une erreur est survenue');
+    }
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.logoRow}>
+          <TrelloLogo />
+          <h1 className={styles.logoText}>EpiTrello</h1>
+        </div>
+        <h2 className={styles.title}>Sign up to continue</h2>
+
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <label className={styles.label} htmlFor="email">
+            Email <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            className={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="username">
+            Username <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="username"
+            type="text"
+            placeholder="Choose a username"
+            className={styles.input}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="password">
+            Password <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            className={styles.input}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="confirmPassword">
+            Confirm password <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            className={styles.input}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+
+          {error && <p className={styles.error}>{error}</p>}
+
+          <button type="submit" className={styles.primaryButton}>
+            Sign up
+          </button>
+        </form>
+
+        <p className={styles.linksRow}>
+          <a href="/login">Already have an account? Log in</a>
+        </p>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/pages/TemplatesPage/TemplatesPage.module.css">
+.page {
+  min-height: 100vh;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.shell {
+  display: flex;
+  min-height: calc(100vh - 56px);
+  background: #1f1f21;
+}
+
+.main {
+  flex: 1;
+  padding: 18px 16px;
+  background: #1f1f21;
+}
+</file>
+
+<file path="src/pages/TemplatesPage/TemplatesPage.tsx">
+import { useEffect } from 'react';
+import { apiFetch } from '@/api/fetcher';
+
+import TopBar from '../../components/TopBar/TopBar';
+import SideMenu from '../../components/SideMenu/SideMenu';
+import styles from './TemplatesPage.module.css';
+
+export default function TemplatesPage() {
+  useEffect(() => {
+    apiFetch('/api/me').catch(() => {
+      // Error handled in fetcher
+    });
+  }, []);
+
+  return (
+    <div className={styles.page}>
+      <TopBar />
+      <div className={styles.shell}>
+        <SideMenu />
+        <main className={styles.main}>{/* vide */}</main>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/App.css">
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+</file>
+
+<file path="src/App.tsx">
+import { Routes, Route, Navigate } from 'react-router-dom';
+
+import HomePage from './pages/Homepage/HomePage';
+import SignUpPage from './pages/SignUpPage/SignUpPage';
+import LogInPage from './pages/LogInPage/LogInPage';
+import BoardsPage from './pages/BoardsPage/BoardsPage';
+import TemplatesPage from './pages/TemplatesPage/TemplatesPage';
+import './App.css';
+
+import ProtectedRoute from './auth/ProtectexRoute';
+import { isAuthenticated } from '@/auth/token';
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/login" element={<LogInPage />} />
+
+      {/* Protected */}
+      <Route
+        path="/boards"
+        element={
+          <ProtectedRoute>
+            <BoardsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/templates"
+        element={
+          <ProtectedRoute>
+            <TemplatesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route
+        path="*"
+        element={
+          isAuthenticated() ? (
+            <Navigate to="/boards" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
+  );
+}
+</file>
+
+<file path="src/main.tsx">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>,
+);
+</file>
+
+<file path=".eslintignore">
+dist/
+node_modules/
+</file>
+
+<file path=".gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+</file>
+
+<file path=".prettierignore">
+dist/
+node_modules/
+coverage/
+</file>
+
+<file path=".prettierrc">
+{
+  "printWidth": 100,
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="eslint.config.js">
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+
+import importPlugin from "eslint-plugin-import";
+import unusedImports from "eslint-plugin-unused-imports";
+import jsonc from "eslint-plugin-jsonc";
+import yml from "eslint-plugin-yml";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+
+import jsoncParser from "jsonc-eslint-parser";
+import yamlParser from "yaml-eslint-parser";
+
+import { defineConfig, globalIgnores } from "eslint/config";
+
+export default defineConfig([
+  globalIgnores(["dist", "node_modules"]),
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
+
+    languageOptions: {
+      ecmaVersion: 2023,
+      sourceType: "module",
+      ecmaFeatures: { jsx: true },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
+      parser: tseslint.parser,
+    },
+
+    plugins: {
+      "@typescript-eslint": tseslint.plugin,
+      import: importPlugin,
+      "unused-imports": unusedImports,
+      "react-hooks": reactHooks,
+    },
+
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommended,
+      reactHooks.configs.recommended,
+      reactRefresh.configs.vite,
+      "eslint-config-prettier",
+    ],
+
+    rules: {
+      "unused-imports/no-unused-imports": "warn",
+      "no-console": "off",
+    },
+  },
+
+  {
+    files: ["*.json", "*.jsonc", "*.json5"],
+
+    languageOptions: {
+      parser: jsoncParser,
+    },
+
+    plugins: {
+      jsonc,
+    },
+
+    extends: ["plugin:jsonc/recommended-with-jsonc"],
+
+    rules: {
+      "jsonc/array-bracket-spacing": ["error", "never"],
+      "jsonc/object-curly-spacing": ["error", "always"],
+      "jsonc/key-spacing": [
+        "error",
+        { beforeColon: false, afterColon: true },
+      ],
+      "jsonc/quote-props": ["error", "as-needed"],
+    },
+  },
+
+  {
+    files: ["*.yml", "*.yaml"],
+
+    languageOptions: {
+      parser: yamlParser,
+    },
+
+    plugins: {
+      yml,
+    },
+
+    extends: ["plugin:yml/standard"],
+
+    rules: {
+      "yml/indent": ["error", 2],
+      "yml/no-empty-document": "error",
+      "yml/quotes": ["error", { prefer: "single", avoidEscape: false }],
+    },
+  },
+]);
+</file>
+
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>EpiTrello</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="package.json">
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-otp-input": "^3.1.1",
+    "react-router": "^7.10.1",
+    "react-router-dom": "^7.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "lint-staged": "^15.3.0",
+    "prettier": "^3.3.3",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,jsonc,json5,yml,yaml}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}
+</file>
+
+<file path="tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+</file>
+
+<file path="tsconfig.node.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+</file>
+
+<file path="vite.config.ts">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+});
+</file>
+
+</files>
+</file>
+
+<file path="frontend/tsconfig.json">
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+</file>
+
+<file path="frontend/tsconfig.node.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+</file>
+
+<file path=".gitignore">
+node_modules/
+</file>
+
+<file path="README.md">
+# EpiTrello
+</file>
+
+<file path="backend/app/api/auth.py">
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.core.database import SessionLocal
+from app.core.security import create_access_token, hash_password, verify_password
+from app.models.user import User
+from app.schemas.user import UserCreate, UserOut
+from app.schemas.auth import LoginRequest
+
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@router.post("/register", response_model=UserOut)
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    if db.query(User).filter(User.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already used")
+
+    db_user = User(
+        email=user.email,
+        username=user.username,
+        password_hash=hash_password(user.password),
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@router.post("/login")
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token(subject=str(user.id))
+    return {"access_token": token, "token_type": "bearer"}
+</file>
+
+<file path="backend/app/api/boards.py">
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from uuid import UUID
+
+from app.api.deps import get_db, get_current_user
+from app.models.board import Board
+from app.models.user import User
+from app.schemas.board import BoardCreate, BoardOut
+from app.schemas.board import BoardUpdate
+from app.models.board_member import BoardMember
+
+router = APIRouter(prefix="/boards", tags=["Boards"])
+
+@router.get("/", response_model=list[BoardOut])
+def list_boards(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return (
+        db.query(Board)
+        .filter(Board.owner_id == current_user.id)
+        .all()
+    )
+
+@router.post("/", response_model=BoardOut, status_code=status.HTTP_201_CREATED)
+def create_board(
+    board_in: BoardCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    board = Board(
+        title=board_in.title,
+        owner_id=current_user.id,
+    )
+    db.add(board)
+    db.flush()
+
+    board_member = BoardMember(
+        board_id=board.id,
+        user_id=current_user.id,
+        role="owner",
+    )
+    db.add(board_member)
+
+    db.commit()
+    db.refresh(board)
+
+    return board
+
+@router.put("/{board_id}", response_model=BoardOut)
+def update_board(
+    board_id: UUID,
+    board_in: BoardUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    board = db.query(Board).filter(Board.id == board_id).first()
+
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+
+    if board.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    board.title = board_in.title
+    db.commit()
+    db.refresh(board)
+    return board
+
+@router.delete("/{board_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_board(
+    board_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    board = db.query(Board).filter(Board.id == board_id).first()
+
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+
+    if board.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    db.delete(board)
+    db.commit()
+</file>
+
+<file path="backend/app/api/deps.py">
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.database import SessionLocal
+from app.models.user import User
+
+security = HTTPBearer()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+) -> User:
+    token = credentials.credentials
+
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+        user_id: str | None = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+
+    return user
+</file>
+
+<file path="backend/app/api/users.py">
+from fastapi import APIRouter, Depends
+
+from app.api.deps import get_current_user
+from app.models.user import User
+from app.schemas.user import UserOut
+
+router = APIRouter(prefix="/users", tags=["Users"])
+
+
+@router.get("/me", response_model=UserOut)
+def read_me(current_user: User = Depends(get_current_user)):
+    return current_user
+</file>
+
+<file path="backend/app/core/database.py">
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
+
+from app.core.config import settings
+
+engine = create_engine(settings.DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+</file>
+
+<file path="backend/app/core/security.py">
+from datetime import datetime, timedelta
+
+from jose import jwt
+from passlib.context import CryptContext
+
+from app.core.config import settings
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(password: str, hashed: str) -> bool:
+    return pwd_context.verify(password, hashed)
+
+def create_access_token(subject: str) -> str:
+    expire = datetime.utcnow() + timedelta(
+        minutes=settings.JWT_EXPIRE_MINUTES
+    )
+    to_encode = {
+        "sub": subject,
+        "exp": expire,
+    }
+    return jwt.encode(
+        to_encode,
+        settings.JWT_SECRET,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+</file>
+
+<file path="backend/app/models/__init__.py">
+from .user import User
+from .board import Board
+from .board_member import BoardMember
+from .list import List
+from app.models.card import Card
+</file>
+
+<file path="backend/app/models/board_member.py">
+from sqlalchemy import Column, String, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+import uuid
+
+from app.core.database import Base
+
+class BoardMember(Base):
+    __tablename__ = "board_members"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    board_id = Column(UUID(as_uuid=True), ForeignKey("boards.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    role = Column(String, nullable=False, default="member")
+
+    board = relationship("Board", back_populates="members")
+    user = relationship("User", back_populates="boards")
+</file>
+
+<file path="backend/app/models/board.py">
+from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from datetime import datetime
+import uuid
+from app.core.database import Base
+
+class Board(Base):
+    __tablename__ = "boards"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    owner = relationship("User", back_populates="owned_boards")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    members = relationship(
+        "BoardMember",
+        back_populates="board",
+        cascade="all, delete-orphan"
+    )
+
+    lists = relationship(
+        "List",
+        back_populates="board",
+        cascade="all, delete-orphan",
+        order_by="List.position",
+    )
+</file>
+
+<file path="backend/app/models/user.py">
+import uuid
+
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+
+from app.core.database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+
+    owned_boards = relationship("Board", back_populates="owner")
+    boards = relationship("BoardMember", back_populates="user")
+</file>
+
+<file path="backend/app/schemas/user.py">
+from uuid import UUID
+
+from pydantic import BaseModel, EmailStr
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+
+
+class UserOut(BaseModel):
+    id: UUID
+    email: EmailStr
+    username: str
+
+    class Config:
+        from_attributes = True
+</file>
+
+<file path="backend/migrations/versions/927fd34de516_create_users.py">
+"""create users
+
+Revision ID: 927fd34de516
+Revises:
+Create Date: 2025-12-16 09:52:56.206229
+
+"""
+
+from typing import Sequence, Union
+
+import sqlalchemy as sa
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision: str = "927fd34de516"
+down_revision: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    pass
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    pass
+    # ### end Alembic commands ###
+</file>
+
+<file path="backend/migrations/versions/d7ba0a18e933_create_users_table.py">
+"""create users table
+
+Revision ID: d7ba0a18e933
+Revises: 927fd34de516
+Create Date: 2025-12-16 10:08:29.135049
+
+"""
+
+from typing import Sequence, Union
+
+import sqlalchemy as sa
+from alembic import op
+
+# revision identifiers, used by Alembic.
+revision: str = "d7ba0a18e933"
+down_revision: Union[str, Sequence[str], None] = "927fd34de516"
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+
+def upgrade() -> None:
+    """Upgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.create_table(
+        "users",
+        sa.Column("id", sa.UUID(), nullable=False),
+        sa.Column("email", sa.String(), nullable=False),
+        sa.Column("username", sa.String(), nullable=False),
+        sa.Column("password_hash", sa.String(), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
+    op.create_index(op.f("ix_users_username"), "users", ["username"], unique=True)
+    # ### end Alembic commands ###
+
+
+def downgrade() -> None:
+    """Downgrade schema."""
+    # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_index(op.f("ix_users_username"), table_name="users")
+    op.drop_index(op.f("ix_users_email"), table_name="users")
+    op.drop_table("users")
+    # ### end Alembic commands ###
+</file>
+
+<file path="backend/migrations/env.py">
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+from app.core.database import Base
+from app.models.user import User
+
+# this is the Alembic Config object, which provides
+# access to the values within the .ini file in use.
+config = context.config
+
+# Interpret the config file for Python logging.
+# This line sets up loggers basically.
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+# target_metadata = None
+target_metadata = Base.metadata
+
+# other values from the config, defined by the needs of env.py,
+# can be acquired:
+# my_important_option = config.get_main_option("my_important_option")
+# ... etc.
+
+
+def run_migrations_offline() -> None:
+    """Run migrations in 'offline' mode.
+
+    This configures the context with just a URL
+    and not an Engine, though an Engine is acceptable
+    here as well.  By skipping the Engine creation
+    we don't even need a DBAPI to be available.
+
+    Calls to context.execute() here emit the given string to the
+    script output.
+
+    """
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
+</file>
+
+<file path="backend/requirements.txt">
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+alembic
+python-dotenv
+pydantic
+pydantic[email]
+pydantic-settings
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-jose[cryptography]
+</file>
+
+<file path="frontend/src/api/fetcher.ts">
+import { getAccessToken, logout } from '@/auth/token';
+import { API_BASE_URL } from '@/config/api';
+
+export async function apiFetch(
+  path: string,
+  options: RequestInit = {}
+) {
+  const token = getAccessToken();
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+
+  if (res.status === 401) {
+    logout();
+    window.location.replace('/login');
+    throw new Error('Unauthorized');
+  }
+
+  return res;
+}
+</file>
+
+<file path="frontend/src/components/CreateBoardModal/CreateBoardModal.tsx">
+import { useEffect, useMemo, useRef, useState } from 'react';
+import styles from './CreateBoardModal.module.css';
+
+type BackgroundOption =
+  | { id: string; kind: 'image'; value: string }
+  | { id: string; kind: 'gradient'; value: string };
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (payload: { title: string }) => void;
+};
+
+const BG_OPTIONS: BackgroundOption[] = [
+  {
+    id: 'img-1',
+    kind: 'image',
+    value:
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60',
+  },
+  {
+    id: 'img-2',
+    kind: 'image',
+    value:
+      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=900&q=60',
+  },
+  {
+    id: 'img-3',
+    kind: 'image',
+    value:
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60',
+  },
+  {
+    id: 'img-4',
+    kind: 'image',
+    value:
+      'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=60',
+  },
+
+  { id: 'g-1', kind: 'gradient', value: 'linear-gradient(135deg, #e6f0ff, #cfe2ff)' },
+  { id: 'g-2', kind: 'gradient', value: 'linear-gradient(135deg, #1fb6ff, #2dd4bf)' },
+  { id: 'g-3', kind: 'gradient', value: 'linear-gradient(135deg, #0ea5e9, #2563eb)' },
+  { id: 'g-4', kind: 'gradient', value: 'linear-gradient(135deg, #334155, #0f172a)' },
+  { id: 'g-5', kind: 'gradient', value: 'linear-gradient(135deg, #6d28d9, #ec4899)' },
+  { id: 'g-6', kind: 'gradient', value: 'linear-gradient(135deg, #7b5cff, #f17ac6)' },
+];
+
+function styleForBg(bg: BackgroundOption): React.CSSProperties {
+  if (bg.kind === 'image') return { backgroundImage: `url(${bg.value})` };
+  return { backgroundImage: bg.value };
+}
+
+export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const [bgId, setBgId] = useState<string>(BG_OPTIONS[0].id);
+  const [title, setTitle] = useState('');
+  const [touched, setTouched] = useState(false);
+  const [visibility, setVisibility] = useState<'workspace' | 'private'>('workspace');
+
+  const selectedBg = useMemo(() => BG_OPTIONS.find((b) => b.id === bgId) ?? BG_OPTIONS[0], [bgId]);
+
+  const titleError = touched && title.trim().length === 0 ? 'Board title is required' : null;
+  const canCreate = title.trim().length > 0;
+
+  useEffect(() => {
+    if (!open) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    setTouched(false);
+    setTitle('');
+    setVisibility('workspace');
+    setBgId(BG_OPTIONS[0].id);
+  }, [open]);
+
+  function handleOverlayMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    if (e.target === e.currentTarget) onClose();
+  }
+
+  if (!open) return null;
+
+  return (
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Create board"
+      onMouseDown={handleOverlayMouseDown}
+    >
+      <div className={styles.panel} ref={panelRef}>
+        <div className={styles.header}>
+          <div className={styles.headerTitle}>Create board</div>
+          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+
+        <div className={styles.preview} style={styleForBg(selectedBg)}>
+          <div className={styles.previewMock}>
+            <div className={styles.mockCol}>
+              <div className={styles.mockLine} />
+              <div className={styles.mockLineShort} />
+              <div className={styles.mockCard} />
+            </div>
+            <div className={styles.mockCol}>
+              <div className={styles.mockLine} />
+              <div className={styles.mockLineShort} />
+              <div className={styles.mockCard} />
+            </div>
+            <div className={styles.mockCol}>
+              <div className={styles.mockLine} />
+              <div className={styles.mockLineShort} />
+              <div className={styles.mockCard} />
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Background</div>
+
+          <div className={styles.bgGrid}>
+            {BG_OPTIONS.slice(0, 4).map((bg) => (
+              <button
+                key={bg.id}
+                type="button"
+                className={`${styles.bgTile} ${bgId === bg.id ? styles.bgTileActive : ''}`}
+                onClick={() => setBgId(bg.id)}
+                aria-label="Select background"
+                style={styleForBg(bg)}
+              />
+            ))}
+          </div>
+
+          <div className={styles.bgGrid2}>
+            {BG_OPTIONS.slice(4, 10).map((bg) => (
+              <button
+                key={bg.id}
+                type="button"
+                className={`${styles.colorTile} ${bgId === bg.id ? styles.colorTileActive : ''}`}
+                onClick={() => setBgId(bg.id)}
+                aria-label="Select color"
+                style={styleForBg(bg)}
+              />
+            ))}
+
+            <button type="button" className={styles.moreTile} aria-label="More backgrounds">
+              …
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <label className={styles.label}>
+            Board title <span className={styles.required}>*</span>
+          </label>
+
+          <input
+            className={`${styles.input} ${titleError ? styles.inputError : ''}`}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => setTouched(true)}
+            autoFocus
+          />
+
+          {titleError && (
+            <div className={styles.inlineError}>
+              <span className={styles.wave}>👋</span>
+              {titleError}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Visibility</div>
+
+          <select
+            className={styles.select}
+            value={visibility}
+            onChange={(e) => setVisibility(e.target.value as any)}
+          >
+            <option value="public">Public</option>
+            <option value="workspace">Workspace</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.primaryBtn}
+            disabled={!canCreate}
+            onClick={() => onCreate({ title: title.trim() })}
+          >
+            Create
+          </button>
+
+          <button type="button" className={styles.secondaryBtn} onClick={() => {}}>
+            Start with a template
+          </button>
+
+          <div className={styles.footerNote}>
+            By using images from Unsplash, you agree to their{' '}
+            <span className={styles.linkLike}>license</span> and{' '}
+            <span className={styles.linkLike}>Terms of Service</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/BoardsPage/BoardsPage.module.css">
+.page {
+  min-height: 100vh;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.shell {
+  display: flex;
+  min-height: calc(100vh - 56px);
+  background: #1f1f21;
+}
+
+.main {
+  flex: 1;
+  padding: 18px 16px;
+  background: #1f1f21;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  padding-left: 104px;
+  align-items: start;
+}
+
+.card {
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+
+  border-radius: 12px;
+  overflow: hidden;
+
+  background: #2a2a2d;
+
+  transition: background 120ms ease;
+}
+
+.card:hover {
+  background: #303034;
+}
+
+.preview {
+  height: 72px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  background-image: linear-gradient(
+    135deg,
+    #7b5cff,
+    #f17ac6
+  );
+}
+
+.titleBar {
+  padding: 12px 14px;
+}
+
+.title {
+  /* font-size: 16px; */
+  line-height: 20px;
+  font-weight: 300;
+  color: #f5f5f7;
+}
+
+.createCard {
+  background: #252528;
+}
+
+.createCard:hover {
+  background: #2c2c30;
+}
+
+.createInner {
+  height: 100%;
+  min-height: 117px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #c9c9ce;
+  font-size: 22px;
+  font-weight: 400;
+}
+</file>
+
+<file path="frontend/src/pages/Homepage/HomePage.tsx">
+import { useNavigate } from 'react-router-dom';
+import styles from './HomePage.module.css';
+
+export default function HomePage() {
+  const navigate = useNavigate();
+
+  function handleSignUpClick() {
+    navigate('/signup');
+  }
+
+  function handleLogInClick() {
+    navigate('/login');
+  }
+
+  return (
+    <div>
+      <nav className={styles.nav}>
+        <div>EpiTrello</div>
+        <div className={styles.navButtons}>
+          <button onClick={handleSignUpClick}>Sign up</button>
+          <button onClick={handleLogInClick}>Log in</button>
+        </div>
+      </nav>
+
+      <main className={styles.main}>
+        <p>Homepage très simple pour l'instant.</p>
+      </main>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/.gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+</file>
+
+<file path="frontend/tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="frontend/vite.config.ts">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+});
+</file>
+
+<file path="package.json">
+{
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsonc": "^2.21.0",
+    "eslint-plugin-unused-imports": "^4.3.0",
+    "eslint-plugin-yml": "^1.19.0",
+    "jsonc-eslint-parser": "^2.4.2",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "yaml-eslint-parser": "^1.3.2"
+  }
+}
+</file>
+
+<file path="backend/app/api/router.py">
+from fastapi import APIRouter
+
+from app.api.auth import router as auth_router
+from app.api.users import router as users_router
+from app.api.boards import router as boards_router
+from app.api.lists import router as lists_router
+from app.api.cards import router as cards_router
+
+api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_router)
+api_router.include_router(users_router)
+api_router.include_router(boards_router)
+api_router.include_router(lists_router)
+api_router.include_router(cards_router)
+</file>
+
+<file path="backend/app/main.py">
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.router import api_router
+
+app = FastAPI(title="Trello Clone API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Vite
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(api_router)
+
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Trello Clone API!"}
+</file>
+
+<file path="frontend/src/components/TopBar/TopBar.module.css">
+.bar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trelloButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #ffffff; /* texte blanc */
+}
+
+.trelloButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.trelloText {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.trelloIcon {
+  width: 22px;
+  height: 22px;
+  fill: #ffffff;
+  opacity: 0.95;
+}
+
+.trelloIconInner {
+  fill: #1f1f21;
+  opacity: 0.9;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.search {
+  width: min(520px, 100%);
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.search::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.search:focus {
+  outline: none;
+  border-color: rgba(103, 157, 241, 0.8);
+  box-shadow: 0 0 0 2px rgba(103, 157, 241, 0.25);
+}
+
+.createButton {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #679df1; /* background create button */
+  color: #1f1f21; /* texte create button */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.createButton:hover {
+  filter: brightness(1.03);
+}
+
+.profileButton {
+  width: 28px;
+  height: 28px;
+  border: none;
+  padding: 0;
+  line-height: 0;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.profileButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.avatar {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+
+.profileWrapper {
+  position: relative;
+}
+
+.profileMenu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+
+.themeMenu {
+  position: absolute;
+  top: 0;
+  right: 170px;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+</file>
+
+<file path="frontend/src/components/TopBar/TopBar.tsx">
+import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { logout } from '@/auth/token';
+import styles from './TopBar.module.css';
+
+function TrelloMark() {
+  return (
+    <svg className={styles.trelloIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <rect x="7" y="7" width="4.5" height="9" rx="1.2" className={styles.trelloIconInner} />
+      <rect x="12.5" y="7" width="4.5" height="6.5" rx="1.2" className={styles.trelloIconInner} />
+    </svg>
+  );
+}
+
+export default function TopBar() {
+  const navigate = useNavigate();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const themeRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+
+      const wrapperEl = wrapperRef.current;
+      const themeEl = themeRef.current;
+
+      const clickedInWrapper = !!wrapperEl && wrapperEl.contains(target);
+      const clickedInTheme = !!themeEl && themeEl.contains(target);
+
+      if (!clickedInWrapper && !clickedInTheme) {
+        setMenuOpen(false);
+        setThemeOpen(false);
+      }
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [menuOpen]);
+
+  return (
+    <header className={styles.bar}>
+      <Link to="/boards" className={styles.trelloButton} aria-label="Go to boards">
+        <TrelloMark />
+        <span className={styles.trelloText}>EpiTrello</span>
+      </Link>
+
+      <div className={styles.center}>
+        <input
+          className={styles.search}
+          type="search"
+          placeholder="Search"
+          aria-label="Search boards"
+        />
+        <button type="button" className={styles.createButton}>
+          Create
+        </button>
+      </div>
+
+      <div className={styles.profileWrapper} ref={wrapperRef}>
+        <button
+          type="button"
+          className={styles.profileButton}
+          aria-label="Profile"
+          onClick={() => {
+            setMenuOpen((v) => !v);
+            setThemeOpen(false);
+          }}
+        >
+          <span className={styles.avatar} />
+        </button>
+
+        {menuOpen && (
+          <div className={styles.profileMenu}>
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={() => setThemeOpen((v) => !v)}
+            >
+              Theme
+            </button>
+
+            <button
+              type="button"
+              className={styles.menuItem}
+              onClick={() => {
+                logout();
+                navigate('/login');
+              }}
+            >
+              Log Out
+            </button>
+
+            {themeOpen && (
+              <div className={styles.themeMenu} ref={themeRef}>
+                <button type="button" className={styles.menuItem}>
+                  Light
+                </button>
+                <button type="button" className={styles.menuItem}>
+                  Dark
+                </button>
+                <button type="button" className={styles.menuItem}>
+                  Match system
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/BoardPage/BoardPage.module.css">
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #7b5cff, #f17ac6);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.boardTopBar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: rgba(0, 0, 0, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.boardName {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kanban {
+  height: calc(100vh - 56px - 48px);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.listsRow {
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 14px;
+  min-width: max-content;
+  box-sizing: border-box;
+}
+</file>
+
+<file path="frontend/src/pages/BoardPage/BoardPage.tsx">
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { apiFetch } from '@/api/fetcher';
+
+import TopBar from '../../components/TopBar/TopBar';
+import styles from './BoardPage.module.css';
+import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
+import AddListComposer from '../../components/AddListComposer/AddListComposer';
+
+type Board = {
+  id: string;
+  title: string;
+};
+
+function uid(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  return `tmp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+export default function BoardPage() {
+  const { boardId } = useParams();
+
+  const [board, setBoard] = useState<Board | null>(null);
+  const [lists, setLists] = useState<ListModel[]>([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+
+  const [isAddingList, setIsAddingList] = useState(false);
+  const [newListTitle, setNewListTitle] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBoard() {
+      if (!boardId) return;
+      try {
+        const res = await apiFetch(`/api/boards/${boardId}`);
+        const data = (await res.json()) as Board;
+        if (!cancelled) setBoard(data);
+      } catch {
+        // 401 handled in fetcher
+      }
+    }
+
+    loadBoard();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadLists() {
+      if (!boardId) return;
+
+      setLoadingLists(true);
+      try {
+        const res = await apiFetch(`/api/lists/board/${boardId}`);
+        const data = (await res.json()) as ListModel[];
+        if (!cancelled) setLists(Array.isArray(data) ? data : []);
+      } catch {
+        // 401 handled in fetcher
+      } finally {
+        if (!cancelled) setLoadingLists(false);
+      }
+    }
+
+    loadLists();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId]);
+
+  function renameList(listId: string, nextTitle: string) {
+    setLists((prev) => prev.map((l) => (l.id === listId ? { ...l, title: nextTitle } : l)));
+  }
+
+  function openAddList() {
+    setIsAddingList(true);
+  }
+
+  function cancelAddList() {
+    setIsAddingList(false);
+    setNewListTitle('');
+  }
+
+  function submitAddList() {
+    const title = newListTitle.trim();
+    if (!title) return;
+
+    setLists((prev) => [...prev, { id: uid(), title }]);
+
+    setNewListTitle('');
+    setIsAddingList(false);
+  }
+
+  return (
+    <div className={styles.page}>
+      <TopBar />
+
+      <div className={styles.boardTopBar}>
+        <div className={styles.boardName}>{board?.title ?? 'Board'}</div>
+      </div>
+
+      <main className={styles.kanban} aria-busy={loadingLists}>
+        <div className={styles.listsRow}>
+          {lists.map((list) => (
+            <BoardList key={list.id} list={list} onRename={renameList} />
+          ))}
+
+          <AddListComposer
+            open={isAddingList}
+            value={newListTitle}
+            onOpen={openAddList}
+            onChange={setNewListTitle}
+            onCancel={cancelAddList}
+            onSubmit={submitAddList}
+          />
+        </div>
+      </main>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/TemplatesPage/TemplatesPage.tsx">
+import TopBar from '../../components/TopBar/TopBar';
+import SideMenu from '../../components/SideMenu/SideMenu';
+import styles from './TemplatesPage.module.css';
+
+export default function TemplatesPage() {
+  return (
+    <div className={styles.page}>
+      <TopBar />
+      <div className={styles.shell}>
+        <SideMenu />
+        <main className={styles.main}>{/* vide */}</main>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/App.css">
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+</file>
+
+<file path="frontend/src/main.tsx">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>,
+);
+</file>
+
+<file path="frontend/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>EpiTrello</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="frontend/src/pages/LogInPage/LogInPage.module.css">
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafbfc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.trelloIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: 40px;
+  font-weight: 400;
+  color: #091e42;
+  line-height: 1;
+  margin: 0;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #0052cc;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 20px 0 16px;
+  color: #172b4d;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #5e6c84;
+}
+
+.required {
+  color: #de350b;
+  font-weight: 700;
+}
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+  margin-bottom: 12px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4c9aff;
+  box-shadow: 0 0 0 2px rgba(76, 154, 255, 0.3);
+}
+
+.rememberRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 14px;
+  user-select: none;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.rememberText {
+  font-size: 13px;
+  color: #172b4d;
+}
+
+.infoIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #6554c0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  height: 40px;
+  margin-top: 2px;
+  background: #0052cc;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: #0065ff;
+}
+
+.error {
+  font-size: 12px;
+  color: #de350b;
+  margin: 0 0 10px;
+}
+
+.linksRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 14px;
+  font-size: 12px;
+}
+
+.link {
+  color: #6554c0;
+  text-decoration: underline;
+}
+
+.dot {
+  color: #6b778c;
+}
+
+.linksRow,
+.linksRow:visited {
+  color: #0d67e4;
+}
+</file>
+
+<file path="frontend/src/pages/SignUpPage/SignUpPage.module.css">
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafbfc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.trelloIcon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-size: 40px;
+  font-weight: 400;
+  color: #091e42;
+  line-height: 1;
+  margin: 0;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #0052cc;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 20px 0 16px;
+  color: #172b4d;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #5e6c84;
+}
+
+.required {
+  color: #de350b;
+  font-weight: 700;
+}
+
+.input {
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  border: 1px solid #dfe1e6;
+  margin-bottom: 16px;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #4c9aff;
+  box-shadow: 0 0 0 2px rgba(76, 154, 255, 0.3);
+}
+
+.primaryButton {
+  height: 40px;
+  margin-top: 8px;
+  background: #0052cc;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primaryButton:hover {
+  background: #0065ff;
+}
+
+.error {
+  font-size: 12px;
+  color: #de350b;
+  margin-bottom: 12px;
+}
+
+.linksRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 14px;
+  font-size: 12px;
+}
+
+.link {
+  color: #6554c0;
+  text-decoration: underline;
+}
+
+.dot {
+  color: #6b778c;
+}
+
+.linksRow,
+.linksRow:visited {
+  color: #0d67e4;
+}
+</file>
+
+<file path="frontend/package.json">
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-otp-input": "^3.1.1",
+    "react-router": "^7.10.1",
+    "react-router-dom": "^7.10.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "lint-staged": "^15.3.0",
+    "prettier": "^3.3.3",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,jsonc,json5,yml,yaml}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}
+</file>
+
+<file path="frontend/src/pages/BoardsPage/BoardsPage.tsx">
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '@/api/fetcher';
+
+import TopBar from '../../components/TopBar/TopBar';
+import SideMenu from '../../components/SideMenu/SideMenu';
+import styles from './BoardsPage.module.css';
+import CreateBoardModal from '@/components/CreateBoardModal/CreateBoardModal';
+
+type Board = {
+  id: string;
+  title: string;
+  backgroundUrl?: string | null;
+  background_url?: string | null;
+};
+
+function getBoardBackgroundUrl(board: Board): string | null {
+  return board.backgroundUrl ?? board.background_url ?? null;
+}
+
+export default function BoardsPage() {
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBoards() {
+      try {
+        const res = await apiFetch('/api/boards');
+        const data = (await res.json()) as Board[];
+
+        if (!cancelled) setBoards(Array.isArray(data) ? data : []);
+      } catch {
+        // 401 est déjà géré dans apiFetch (logout + redirect /login)
+        // ici on ne fait rien
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadBoards();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleCreateClick() {
+    setCreateOpen(true);
+  }
+
+  async function handleCreateBoard(payload: { title: string }) {
+    const res = await apiFetch('/api/boards', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    const board = await res.json();
+
+    setCreateOpen(false);
+    navigate(`/boards/${board.id}`);
+  }
+
+  return (
+    <div className={styles.page}>
+      <TopBar />
+      <div className={styles.shell}>
+        <SideMenu />
+
+        <main className={styles.main}>
+          <div className={styles.grid} aria-busy={loading}>
+            {boards.map((b) => {
+              const bg = getBoardBackgroundUrl(b);
+
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  className={styles.card}
+                  onClick={() => navigate(`/boards/${b.id}`)}
+                >
+                  <div
+                    className={styles.preview}
+                    style={bg ? { backgroundImage: `url(${bg})` } : undefined}
+                  />
+                  <div className={styles.titleBar}>
+                    <span className={styles.title}>{b.title}</span>
+                  </div>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              className={`${styles.card} ${styles.createCard}`}
+              onClick={handleCreateClick}
+              aria-label="Create new board"
+            >
+              <div className={styles.createInner}>Create new board</div>
+            </button>
+          </div>
+        </main>
+        <CreateBoardModal
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreate={handleCreateBoard}
+        />
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/LogInPage/LogInPage.tsx">
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import styles from './LogInPage.module.css';
+import { API_BASE_URL } from '@/config/api';
+
+function TrelloLogo() {
+  return (
+    <svg className={styles.trelloIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="3" fill="#0052CC" />
+      <rect x="6" y="6" width="4" height="10" rx="1" fill="#FFFFFF" />
+      <rect x="14" y="6" width="4" height="6" rx="1" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+export default function LogInPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+
+    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!res.ok) {
+      setError('Invalid email or password');
+      return;
+    }
+
+    const data: { access_token: string; token_type?: string } = await res.json();
+
+    if (data?.access_token) {
+      localStorage.setItem('access_token', data.access_token);
+      navigate('/boards');
+    } else {
+      setError('Unexpected server response');
+    }
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.logoRow}>
+          <TrelloLogo />
+          <h1 className={styles.logoText}>EpiTrello</h1>
+        </div>
+
+        <h2 className={styles.title}>Log in to continue</h2>
+
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <label className={styles.label} htmlFor="email">
+            Email <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            className={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="password">
+            Password <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            className={styles.input}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          {error && <p className={styles.error}>{error}</p>}
+
+          <button type="submit" className={styles.primaryButton}>
+            Continue
+          </button>
+        </form>
+
+        <p className={styles.linksRow}>
+          <a href="/signup">Don't have an account? Sign up</a>
+        </p>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/SignUpPage/SignUpPage.tsx">
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import styles from './SignUpPage.module.css';
+import { API_BASE_URL } from '@/config/api';
+
+function TrelloLogo() {
+  return (
+    <svg className={styles.trelloIcon} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="3" fill="#0052CC" />
+      <rect x="6" y="6" width="4" height="10" rx="1" fill="#FFFFFF" />
+      <rect x="14" y="6" width="4" height="6" rx="1" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+export default function SignUpPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!email || !username || !password || !confirmPassword) {
+      setError('Tous les champs sont requis');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password }),
+      });
+
+      if (res.status === 200) {
+        navigate('/login');
+      } else if (res.status === 400) {
+        setError('Email already used');
+      } else {
+        setError('Une erreur est survenue');
+      }
+    } catch (err) {
+      setError('Une erreur est survenue');
+    }
+  }
+
+  return (
+    <main className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.logoRow}>
+          <TrelloLogo />
+          <h1 className={styles.logoText}>EpiTrello</h1>
+        </div>
+        <h2 className={styles.title}>Sign up to continue</h2>
+
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <label className={styles.label} htmlFor="email">
+            Email <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            className={styles.input}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="username">
+            Username <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="username"
+            type="text"
+            placeholder="Choose a username"
+            className={styles.input}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="password">
+            Password <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            className={styles.input}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <label className={styles.label} htmlFor="confirmPassword">
+            Confirm password <span className={styles.required}>*</span>
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            placeholder="Confirm your password"
+            className={styles.input}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+
+          {error && <p className={styles.error}>{error}</p>}
+
+          <button type="submit" className={styles.primaryButton}>
+            Sign up
+          </button>
+        </form>
+
+        <p className={styles.linksRow}>
+          <a href="/login">Already have an account? Log in</a>
+        </p>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="frontend/src/App.tsx">
+import { Routes, Route, Navigate } from 'react-router-dom';
+
+import HomePage from './pages/Homepage/HomePage';
+import SignUpPage from './pages/SignUpPage/SignUpPage';
+import LogInPage from './pages/LogInPage/LogInPage';
+import BoardsPage from './pages/BoardsPage/BoardsPage';
+import TemplatesPage from './pages/TemplatesPage/TemplatesPage';
+import BoardPage from './pages/BoardPage/BoardPage';
+import './App.css';
+
+import ProtectedRoute from './auth/ProtectedRoute';
+import { isAuthenticated } from '@/auth/token';
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/" element={<HomePage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/login" element={<LogInPage />} />
+
+      {/* Protected */}
+      <Route
+        path="/boards"
+        element={
+          <ProtectedRoute>
+            <BoardsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/templates"
+        element={
+          <ProtectedRoute>
+            <TemplatesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/boards/:boardId"
+        element={
+          <ProtectedRoute>
+            <BoardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route
+        path="*"
+        element={
+          isAuthenticated() ? (
+            <Navigate to="/boards" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+    </Routes>
+  );
+}
+</file>
+
+</files>
