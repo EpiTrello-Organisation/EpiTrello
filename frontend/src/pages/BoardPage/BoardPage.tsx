@@ -6,6 +6,7 @@ import TopBar from '../../components/TopBar/TopBar';
 import styles from './BoardPage.module.css';
 import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
 import AddListComposer from '../../components/AddListComposer/AddListComposer';
+import type { CardModel } from '../../components/BoardCard/BoardCard';
 
 export default function BoardPage() {
   const { boardId } = useParams();
@@ -13,28 +14,58 @@ export default function BoardPage() {
   const [lists, setLists] = useState<ListModel[]>([]);
   const [loadingLists, setLoadingLists] = useState(true);
 
+  const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
+  const [loadingCards, setLoadingCards] = useState(false);
+
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadLists() {
+    async function loadListsAndCards() {
       if (!boardId) return;
 
       setLoadingLists(true);
+      setLoadingCards(true);
+
       try {
-        const res = await apiFetch(`/api/lists/board/${boardId}`);
-        const data = (await res.json()) as ListModel[];
-        if (!cancelled) setLists(Array.isArray(data) ? data : []);
+        // 1) lists
+        const resLists = await apiFetch(`/api/lists/board/${boardId}`);
+        const listsData = (await resLists.json()) as ListModel[];
+        const safeLists = Array.isArray(listsData) ? listsData : [];
+
+        if (cancelled) return;
+
+        setLists(safeLists);
+
+        // 2) cards for each list (parallel)
+        const entries = await Promise.all(
+          safeLists.map(async (l) => {
+            const resCards = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(l.id)}`);
+            const cards = (await resCards.json()) as CardModel[];
+            return [l.id, Array.isArray(cards) ? cards : []] as const;
+          }),
+        );
+
+        if (cancelled) return;
+
+        setCardsByListId(Object.fromEntries(entries));
       } catch {
         // 401 handled in fetcher
+        if (!cancelled) {
+          setLists([]);
+          setCardsByListId({});
+        }
       } finally {
-        if (!cancelled) setLoadingLists(false);
+        if (!cancelled) {
+          setLoadingLists(false);
+          setLoadingCards(false);
+        }
       }
     }
 
-    loadLists();
+    loadListsAndCards();
     return () => {
       cancelled = true;
     };
@@ -84,10 +115,15 @@ export default function BoardPage() {
         <div className={styles.boardName}>{boardId ?? 'Board'}</div>
       </div>
 
-      <main className={styles.kanban} aria-busy={loadingLists}>
+      <main className={styles.kanban} aria-busy={loadingLists || loadingCards}>
         <div className={styles.listsRow}>
           {lists.map((list) => (
-            <BoardList key={list.id} list={list} onRename={renameList} />
+            <BoardList
+              key={list.id}
+              list={list}
+              cards={cardsByListId[list.id] ?? []}
+              onRename={renameList}
+            />
           ))}
 
           <AddListComposer

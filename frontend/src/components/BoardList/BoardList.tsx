@@ -1,5 +1,6 @@
 import styles from './BoardList.module.css';
 import EditableText from '../EditableText/EditableText';
+import BoardCard, { type CardModel } from '../BoardCard/BoardCard';
 
 export type ListModel = {
   id: string;
@@ -38,9 +39,11 @@ function IconTemplate() {
 
 export default function BoardList({
   list,
+  cards,
   onRename,
 }: {
   list: ListModel;
+  cards: CardModel[];
   onRename: (listId: string, nextTitle: string) => void;
 }) {
   return (
@@ -57,6 +60,15 @@ export default function BoardList({
         <button type="button" className={styles.iconBtn} aria-label="List menu">
           <IconDots />
         </button>
+      </div>
+
+      <div className={styles.cards}>
+        {cards
+          .slice()
+          .sort((a, b) => a.position - b.position)
+          .map((c) => (
+            <BoardCard key={c.id} card={c} />
+          ))}
       </div>
 
       <div className={styles.listRow2}>

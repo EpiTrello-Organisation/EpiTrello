@@ -117,3 +117,10 @@
 .templateBtn:hover {
   background: rgba(255, 255, 255, 0.06);
 }
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
