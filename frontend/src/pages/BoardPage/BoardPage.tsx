@@ -1,26 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+
 import { apiFetch } from '@/api/fetcher';
 
-import TopBar from '../../components/TopBar/TopBar';
-import styles from './BoardPage.module.css';
-import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
-import AddListComposer from '../../components/AddListComposer/AddListComposer';
 import type { CardModel } from '../../components/BoardCard/BoardCard';
+import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
 import CardModal from '../../components/CardModal/CardModal';
+import AddListComposer from '../../components/AddListComposer/AddListComposer';
+import BoardTopBar from '../../components/BoardTopBar/BoardTopBar';
+import TopBar from '../../components/TopBar/TopBar';
+
+import styles from './BoardPage.module.css';
 
 export default function BoardPage() {
   const { boardId } = useParams();
-
   const [lists, setLists] = useState<ListModel[]>([]);
-  const [loadingLists, setLoadingLists] = useState(true);
-
   const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
+  const [loadingLists, setLoadingLists] = useState(true);
   const [loadingCards, setLoadingCards] = useState(false);
-
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
-
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
 
   useEffect(() => {
@@ -33,16 +32,13 @@ export default function BoardPage() {
       setLoadingCards(true);
 
       try {
-        // 1) lists
         const resLists = await apiFetch(`/api/lists/board/${encodeURIComponent(boardId)}`);
         const listsData = (await resLists.json()) as ListModel[];
         const safeLists = Array.isArray(listsData) ? listsData : [];
 
         if (cancelled) return;
-
         setLists(safeLists);
 
-        // 2) cards for each list (parallel)
         const entries = await Promise.all(
           safeLists.map(async (l) => {
             const resCards = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(l.id)}`);
@@ -52,7 +48,6 @@ export default function BoardPage() {
         );
 
         if (cancelled) return;
-
         setCardsByListId(Object.fromEntries(entries));
       } catch {
         // 401 handled in fetcher
@@ -110,8 +105,7 @@ export default function BoardPage() {
 
   async function submitAddList() {
     const title = newListTitle.trim();
-    if (!title) return;
-    if (!boardId) return;
+    if (!title || !boardId) return;
 
     try {
       const res = await apiFetch(`/api/lists/?board_id=${encodeURIComponent(boardId)}`, {
@@ -121,7 +115,6 @@ export default function BoardPage() {
       });
 
       const created = (await res.json()) as ListModel;
-
       setLists((prev) => [...prev, created]);
 
       setNewListTitle('');
@@ -134,10 +127,7 @@ export default function BoardPage() {
   return (
     <div className={styles.page}>
       <TopBar />
-
-      <div className={styles.boardTopBar}>
-        <div className={styles.boardName}>{boardId ?? 'Board'}</div>
-      </div>
+      <BoardTopBar title={boardId ?? 'Board'} />
 
       <main className={styles.kanban} aria-busy={loadingLists || loadingCards}>
         <div className={styles.listsRow}>
@@ -161,6 +151,7 @@ export default function BoardPage() {
           />
         </div>
       </main>
+
       {selectedCard ? <CardModal card={selectedCard} onClose={closeCard} /> : null}
     </div>
   );
