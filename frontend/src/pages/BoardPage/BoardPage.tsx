@@ -31,7 +31,7 @@ export default function BoardPage() {
 
       try {
         // 1) lists
-        const resLists = await apiFetch(`/api/lists/board/${boardId}`);
+        const resLists = await apiFetch(`/api/lists/board/${encodeURIComponent(boardId)}`);
         const listsData = (await resLists.json()) as ListModel[];
         const safeLists = Array.isArray(listsData) ? listsData : [];
 
@@ -71,8 +71,21 @@ export default function BoardPage() {
     };
   }, [boardId]);
 
-  function renameList(listId: string, nextTitle: string) {
+  async function renameList(listId: string, nextTitle: string) {
+    const prevTitle = lists.find((l) => l.id === listId)?.title ?? '';
+
     setLists((prev) => prev.map((l) => (l.id === listId ? { ...l, title: nextTitle } : l)));
+
+    try {
+      await apiFetch(`/api/lists/${encodeURIComponent(listId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: nextTitle }),
+      });
+    } catch {
+      // 401 handled in fetcher, otherwise revert
+      setLists((prev) => prev.map((l) => (l.id === listId ? { ...l, title: prevTitle } : l)));
+    }
   }
 
   function openAddList() {
