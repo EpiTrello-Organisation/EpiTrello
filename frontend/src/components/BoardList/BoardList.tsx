@@ -41,10 +41,12 @@ export default function BoardList({
   list,
   cards,
   onRename,
+  onOpenCard,
 }: {
   list: ListModel;
   cards: CardModel[];
   onRename: (listId: string, nextTitle: string) => void;
+  onOpenCard: (card: CardModel) => void;
 }) {
   return (
     <section className={styles.list}>
@@ -67,7 +69,7 @@ export default function BoardList({
           .slice()
           .sort((a, b) => a.position - b.position)
           .map((c) => (
-            <BoardCard key={c.id} card={c} />
+            <BoardCard key={c.id} card={c} onOpen={() => onOpenCard(c)} />
           ))}
       </div>
 

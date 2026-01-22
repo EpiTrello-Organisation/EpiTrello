@@ -7,6 +7,7 @@ import styles from './BoardPage.module.css';
 import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
 import AddListComposer from '../../components/AddListComposer/AddListComposer';
 import type { CardModel } from '../../components/BoardCard/BoardCard';
+import CardModal from '../../components/CardModal/CardModal';
 
 export default function BoardPage() {
   const { boardId } = useParams();
@@ -19,6 +20,8 @@ export default function BoardPage() {
 
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
+
+  const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +100,14 @@ export default function BoardPage() {
     setNewListTitle('');
   }
 
+  function openCard(card: CardModel) {
+    setSelectedCard(card);
+  }
+
+  function closeCard() {
+    setSelectedCard(null);
+  }
+
   async function submitAddList() {
     const title = newListTitle.trim();
     if (!title) return;
@@ -136,6 +147,7 @@ export default function BoardPage() {
               list={list}
               cards={cardsByListId[list.id] ?? []}
               onRename={renameList}
+              onOpenCard={openCard}
             />
           ))}
 
@@ -149,6 +161,7 @@ export default function BoardPage() {
           />
         </div>
       </main>
+      {selectedCard ? <CardModal card={selectedCard} onClose={closeCard} /> : null}
     </div>
   );
 }

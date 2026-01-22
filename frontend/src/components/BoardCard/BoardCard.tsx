@@ -10,11 +10,15 @@ export type CardModel = {
   created_at: string;
 };
 
-export default function BoardCard({ card }: { card: CardModel }) {
+export default function BoardCard({ card, onOpen }: { card: CardModel; onOpen: () => void }) {
   return (
-    <button type="button" className={styles.card} aria-label={`Open card ${card.title}`}>
+    <button
+      type="button"
+      className={styles.card}
+      aria-label={`Open card ${card.title}`}
+      onClick={onOpen}
+    >
       <div className={styles.title}>{card.title}</div>
-
       {card.description ? <div className={styles.description}>{card.description}</div> : null}
     </button>
   );
