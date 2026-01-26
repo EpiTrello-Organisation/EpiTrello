@@ -1,9 +1,22 @@
 import styles from './BoardTopBar.module.css';
+import EditableText from '../EditableText/EditableText';
 
-export default function BoardTopBar({ title }: { title: string }) {
+export default function BoardTopBar({
+  title,
+  onRename,
+}: {
+  title: string;
+  onRename: (nextTitle: string) => void;
+}) {
   return (
     <div className={styles.boardTopBar}>
-      <div className={styles.boardName}>{title}</div>
+      <EditableText
+        value={title}
+        ariaLabel="Edit board title"
+        className={styles.boardNameButton}
+        inputClassName={styles.boardNameInput}
+        onChange={onRename}
+      />
 
       <div className={styles.boardTopBarRight}>
         <div className={styles.avatars} aria-label="Board members">

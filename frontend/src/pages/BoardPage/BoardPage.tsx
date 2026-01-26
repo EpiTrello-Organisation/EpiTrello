@@ -12,8 +12,14 @@ import TopBar from '../../components/TopBar/TopBar';
 
 import styles from './BoardPage.module.css';
 
+type BoardModel = {
+  id: string;
+  title: string;
+};
+
 export default function BoardPage() {
   const { boardId } = useParams();
+  const [board, setBoard] = useState<BoardModel | null>(null);
   const [lists, setLists] = useState<ListModel[]>([]);
   const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
   const [loadingLists, setLoadingLists] = useState(true);
@@ -21,6 +27,29 @@ export default function BoardPage() {
   const [isAddingList, setIsAddingList] = useState(false);
   const [newListTitle, setNewListTitle] = useState('');
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadBoard() {
+      if (!boardId) return;
+
+      try {
+        const res = await apiFetch(`/api/boards/${encodeURIComponent(boardId)}`);
+        const data = (await res.json()) as BoardModel;
+
+        if (!cancelled) setBoard(data);
+      } catch {
+        // 401 handled in fetcher
+        if (!cancelled) setBoard(null);
+      }
+    }
+
+    loadBoard();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +115,26 @@ export default function BoardPage() {
     }
   }
 
+  async function renameBoard(nextTitle: string) {
+    const title = nextTitle.trim();
+    if (!title) return;
+    if (!boardId) return;
+
+    const prevTitle = board?.title ?? 'Board';
+
+    setBoard((prev) => (prev ? { ...prev, title } : { id: boardId, title }));
+
+    try {
+      await apiFetch(`/api/boards/${encodeURIComponent(boardId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+    } catch {
+      setBoard((prev) => (prev ? { ...prev, title: prevTitle } : prev));
+    }
+  }
+
   function openAddList() {
     setIsAddingList(true);
   }
@@ -127,7 +176,7 @@ export default function BoardPage() {
   return (
     <div className={styles.page}>
       <TopBar />
-      <BoardTopBar title={boardId ?? 'Board'} />
+      <BoardTopBar title={board?.title ?? 'Board'} onRename={renameBoard} />
 
       <main className={styles.kanban} aria-busy={loadingLists || loadingCards}>
         <div className={styles.listsRow}>
