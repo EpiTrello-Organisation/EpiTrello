@@ -168,6 +168,56 @@ export default function BoardPage() {
     }
   }
 
+  async function renameCard(cardId: string, listId: string, nextTitle: string) {
+    const title = nextTitle.trim();
+    if (!title) return;
+
+    const prevTitle =
+      cardsByListId[listId]?.find((c) => c.id === cardId)?.title ?? selectedCard?.title ?? '';
+
+    setCardsByListId((prev) => ({
+      ...prev,
+      [listId]: (prev[listId] ?? []).map((c) => (c.id === cardId ? { ...c, title } : c)),
+    }));
+
+    setSelectedCard((prev) => (prev && prev.id === cardId ? { ...prev, title } : prev));
+
+    try {
+      await apiFetch(`/api/cards/${encodeURIComponent(cardId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+    } catch {
+      // rollback en cas d'erreur (hors 401 déjà géré)
+      setCardsByListId((prev) => ({
+        ...prev,
+        [listId]: (prev[listId] ?? []).map((c) =>
+          c.id === cardId ? { ...c, title: prevTitle } : c,
+        ),
+      }));
+      setSelectedCard((prev) =>
+        prev && prev.id === cardId ? { ...prev, title: prevTitle } : prev,
+      );
+    }
+  }
+
+  async function deleteCard(cardId: string, listId: string) {
+    setCardsByListId((prev) => ({
+      ...prev,
+      [listId]: (prev[listId] ?? []).filter((c) => c.id !== cardId),
+    }));
+    setSelectedCard(null);
+
+    try {
+      await apiFetch(`/api/cards/${encodeURIComponent(cardId)}`, {
+        method: 'DELETE',
+      });
+    } catch {
+      // 401 handled in fetcher
+    }
+  }
+
   function openAddList() {
     setIsAddingList(true);
   }
@@ -259,7 +309,14 @@ export default function BoardPage() {
         </div>
       </main>
 
-      {selectedCard ? <CardModal card={selectedCard} onClose={closeCard} /> : null}
+      {selectedCard ? (
+        <CardModal
+          card={selectedCard}
+          onClose={closeCard}
+          onRename={(nextTitle) => renameCard(selectedCard.id, selectedCard.list_id, nextTitle)}
+          onDeleteCard={() => deleteCard(selectedCard.id, selectedCard.list_id)}
+        />
+      ) : null}
     </div>
   );
 }
