@@ -18,6 +18,7 @@ export default function BoardKanban({
   onOpenCard,
   onAddList,
   listsRowClassName,
+  onReorderCards,
 }: {
   lists: ListModel[];
   cardsByListId: Record<string, CardModel[]>;
@@ -30,6 +31,7 @@ export default function BoardKanban({
   onOpenCard: (card: CardModel) => void;
   onAddList: (title: string) => void | Promise<void>;
   listsRowClassName: string;
+  onReorderCards: (listId: string, nextCards: CardModel[]) => void | Promise<void>;
 }) {
   return (
     <main aria-busy={loading}>
@@ -45,6 +47,7 @@ export default function BoardKanban({
                 onOpenCard={onOpenCard}
                 onDelete={onDeleteList}
                 onAddCard={onAddCard}
+                onReorderCards={onReorderCards}
               />
             ))}
 

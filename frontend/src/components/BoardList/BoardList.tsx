@@ -1,3 +1,22 @@
+import { useMemo } from 'react';
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 import styles from './BoardList.module.css';
 
 import EditableText from '../EditableText/EditableText';
@@ -57,6 +76,26 @@ function IconX() {
   );
 }
 
+function SortableCardItem({ card, onOpen }: { card: CardModel; onOpen: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: card.id,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(
+      transform && isDragging ? { ...transform, scaleX: 1, scaleY: 1 } : transform,
+    ),
+    transition,
+    opacity: isDragging ? 0.9 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <BoardCard card={card} onOpen={onOpen} />
+    </div>
+  );
+}
+
 export default function BoardList({
   list,
   cards,
@@ -64,6 +103,7 @@ export default function BoardList({
   onOpenCard,
   onDelete,
   onAddCard,
+  onReorderCards,
 }: {
   list: ListModel;
   cards: CardModel[];
@@ -71,8 +111,15 @@ export default function BoardList({
   onOpenCard: (card: CardModel) => void;
   onDelete: (listId: string) => void | Promise<void>;
   onAddCard: (listId: string, title: string) => void | Promise<void>;
+  onReorderCards: (
+    listId: string,
+    nextCards: CardModel[],
+    changedCards: CardModel[],
+  ) => void | Promise<void>;
 }) {
-  const { attributes, listeners, setNodeRef, style } = useSortableStyle(list.id);
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, style } = useSortableStyle(
+    list.id,
+  );
 
   const { menuOpen, setMenuOpen, menuWrapperRef } = useListMenu();
 
@@ -86,7 +133,37 @@ export default function BoardList({
     submitAddCard,
   } = useAddCardComposer({ listId: list.id, onAddCard });
 
-  const sortedCards = cards.slice().sort((a, b) => a.position - b.position);
+  const cardSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const orderedCards = useMemo(
+    () => cards.slice().sort((a, b) => a.position - b.position),
+    [cards],
+  );
+
+  function onDragEndCards(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedCards.findIndex((c) => c.id === String(active.id));
+    const newIndex = orderedCards.findIndex((c) => c.id === String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const moved = arrayMove(orderedCards, oldIndex, newIndex);
+
+    const next = moved.map((c, i) => ({
+      ...c,
+      position: i,
+    }));
+
+    const start = Math.min(oldIndex, newIndex);
+    const end = Math.max(oldIndex, newIndex);
+    const changed = next.slice(start, end + 1);
+
+    onReorderCards(list.id, next, changed);
+  }
 
   return (
     <section
@@ -96,10 +173,8 @@ export default function BoardList({
       }}
       style={style}
       className={styles.list}
-      {...attributes}
-      {...listeners}
     >
-      <div className={styles.listRow1}>
+      <div className={styles.listRow1} ref={setActivatorNodeRef} {...attributes} {...listeners}>
         <EditableText
           value={list.title}
           ariaLabel="Edit list title"
@@ -136,9 +211,20 @@ export default function BoardList({
       </div>
 
       <div className={styles.cards}>
-        {sortedCards.map((c) => (
-          <BoardCard key={c.id} card={c} onOpen={() => onOpenCard(c)} />
-        ))}
+        <DndContext
+          sensors={cardSensors}
+          collisionDetection={closestCenter}
+          onDragEnd={onDragEndCards}
+        >
+          <SortableContext
+            items={orderedCards.map((c) => c.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {orderedCards.map((c) => (
+              <SortableCardItem key={c.id} card={c} onOpen={() => onOpenCard(c)} />
+            ))}
+          </SortableContext>
+        </DndContext>
 
         {isAddingCard ? (
           <AddCardComposer

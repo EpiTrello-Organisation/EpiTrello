@@ -124,12 +124,15 @@ export function useLists(boardId?: string) {
     }
   }
 
-  async function renameCard(cardId: string, listId: string, nextTitle: string, prevTitleFallback = '') {
+  async function renameCard(cardId: string, listId: string, nextTitle: string) {
     const title = nextTitle.trim();
     if (!title) return;
 
-    const prevTitle =
-      cardsByListId[listId]?.find((c) => c.id === cardId)?.title ?? prevTitleFallback;
+    const card = cardsByListId[listId]?.find((c) => c.id === cardId);
+    if (!card) return;
+
+    const prevTitle = card.title;
+    const position = card.position;
 
     setCardsByListId((prev) => ({
       ...prev,
@@ -137,11 +140,18 @@ export function useLists(boardId?: string) {
     }));
 
     try {
-      await apiFetch(`/api/cards/${encodeURIComponent(cardId)}`, {
+      const res = await apiFetch(`/api/cards/${encodeURIComponent(cardId)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({
+          title,
+          position,
+          list_id: card.list_id,
+          description: card.description,
+        }),
       });
+
+      if (!res.ok) throw new Error('Rename card failed');
     } catch {
       setCardsByListId((prev) => ({
         ...prev,
@@ -186,6 +196,37 @@ export function useLists(boardId?: string) {
     }
   }
 
+  async function persistCardPositions(nextCards: CardModel[]) {
+    await Promise.all(
+      nextCards.map(async (c) => {
+        const res = await apiFetch(`/api/cards/${encodeURIComponent(c.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: c.title,
+            description: c.description,
+            position: c.position,
+            list_id: c.list_id,
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(`PUT card failed (${res.status}): ${text}`);
+        }
+      }),
+    );
+  }
+
+  async function reorderCards(listId: string, nextCards: CardModel[]) {
+    setCardsByListId((prev) => ({
+      ...prev,
+      [listId]: nextCards,
+    }));
+
+    await persistCardPositions(nextCards);
+  }
+
   return {
     lists,
     cardsByListId,
@@ -198,5 +239,6 @@ export function useLists(boardId?: string) {
     renameCard,
     deleteCard,
     reorderLists,
+    reorderCards,
   };
 }

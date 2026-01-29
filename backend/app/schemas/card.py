@@ -15,6 +15,7 @@ class CardCreate(CardBase):
 class CardUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
+    position: int | None = None
 
 
 class CardOut(CardBase):

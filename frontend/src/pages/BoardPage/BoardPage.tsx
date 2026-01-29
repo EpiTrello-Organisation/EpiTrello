@@ -31,6 +31,7 @@ export default function BoardPage() {
     renameCard,
     deleteCard,
     reorderLists,
+    reorderCards,
   } = useLists(boardId);
 
   const { sensors, onDragEnd } = useSortableLists({
@@ -65,6 +66,7 @@ export default function BoardPage() {
         onOpenCard={setSelectedCard}
         onAddList={addList}
         listsRowClassName={styles.listsRow}
+        onReorderCards={reorderCards}
       />
 
       {selectedCard ? (
@@ -72,7 +74,7 @@ export default function BoardPage() {
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
           onRename={(nextTitle) =>
-            renameCard(selectedCard.id, selectedCard.list_id, nextTitle, selectedCard.title)
+            renameCard(selectedCard.id, selectedCard.list_id, nextTitle)
           }
           onDeleteCard={async () => {
             await deleteCard(selectedCard.id, selectedCard.list_id);

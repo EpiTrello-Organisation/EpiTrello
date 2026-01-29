@@ -11,6 +11,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  cursor: grab;
+}
+
+.listRow1:active {
+  cursor: grabbing;
 }
 
 .listTitleButton {

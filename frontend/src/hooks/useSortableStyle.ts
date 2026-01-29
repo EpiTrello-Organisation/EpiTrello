@@ -2,9 +2,15 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 export function useSortableStyle(id: string) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-  });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(
@@ -14,5 +20,5 @@ export function useSortableStyle(id: string) {
     opacity: isDragging ? 0.85 : undefined,
   };
 
-  return { attributes, listeners, setNodeRef, style };
+  return { attributes, listeners, setNodeRef, setActivatorNodeRef, style };
 }
