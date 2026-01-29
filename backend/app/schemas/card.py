@@ -16,6 +16,7 @@ class CardUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     position: int | None = None
+    list_id: UUID | None = None
 
 
 class CardOut(CardBase):

@@ -1,8 +1,18 @@
+// BoardKanban.tsx
 import React from 'react';
-import { DndContext, closestCenter, type DragEndEvent, type SensorDescriptor } from '@dnd-kit/core';
-import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  DndContext,
+  closestCorners,
+  DragOverlay,
+  MeasuringStrategy,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+  type SensorDescriptor,
+} from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 
-import type { CardModel } from '@/components/BoardCard/BoardCard';
+import BoardCard, { type CardModel } from '@/components/BoardCard/BoardCard';
 import BoardList, { type ListModel } from '@/components/BoardList/BoardList';
 import AddListComposer from '@/components/AddListComposer/AddListComposer';
 
@@ -11,31 +21,191 @@ export default function BoardKanban({
   cardsByListId,
   loading,
   sensors,
-  onDragEnd,
+  onDragEnd, // lists drag end (useSortableLists)
   onRenameList,
   onDeleteList,
   onAddCard,
   onOpenCard,
   onAddList,
   listsRowClassName,
-  onReorderCards,
+  onMoveCardBetweenLists, // preview UI while dragging across lists
+  onCommitCards, // persist final move/reorder (PUT always on drop)
 }: {
   lists: ListModel[];
   cardsByListId: Record<string, CardModel[]>;
   loading: boolean;
   sensors: SensorDescriptor<any>[];
   onDragEnd: (e: DragEndEvent) => void;
+
   onRenameList: (listId: string, nextTitle: string) => void | Promise<void>;
   onDeleteList: (listId: string) => void | Promise<void>;
   onAddCard: (listId: string, title: string) => void | Promise<void>;
   onOpenCard: (card: CardModel) => void;
   onAddList: (title: string) => void | Promise<void>;
   listsRowClassName: string;
-  onReorderCards: (listId: string, nextCards: CardModel[]) => void | Promise<void>;
+
+  onMoveCardBetweenLists: (
+    fromListId: string,
+    toListId: string,
+    cardId: string,
+    toIndex: number,
+  ) => void;
+
+  // ✅ nouvelle approche: on commit toujours au drop, pas de changedFrom/changedTo
+  onCommitCards: (
+    fromListId: string,
+    toListId: string,
+    nextFrom: CardModel[],
+    nextTo: CardModel[],
+  ) => void | Promise<void>;
 }) {
+  const lastMoveRef = React.useRef<{ from: string; to: string; overId: string } | null>(null);
+  const [activeCardId, setActiveCardId] = React.useState<string | null>(null);
+
+  const activeCard = React.useMemo(() => {
+    if (!activeCardId) return null;
+    for (const cards of Object.values(cardsByListId)) {
+      const found = cards.find((c) => c.id === activeCardId);
+      if (found) return found;
+    }
+    return null;
+  }, [activeCardId, cardsByListId]);
+
+  function isListDropId(id: string) {
+    return id.startsWith('list:');
+  }
+
+  function listIdFromDropId(id: string) {
+    return id.replace('list:', '');
+  }
+
+  function findCardContainer(map: Record<string, CardModel[]>, cardId: string) {
+    for (const [listId, cards] of Object.entries(map)) {
+      if (cards.some((c) => c.id === cardId)) return listId;
+    }
+    return null;
+  }
+
+  function handleDragStart(e: DragStartEvent) {
+    const t = e.active?.data?.current?.type;
+    if (t === 'card') setActiveCardId(String(e.active.id));
+  }
+
+  function handleDragOver(e: DragOverEvent) {
+    const { active, over } = e;
+    if (!over) return;
+
+    const activeType = active.data.current?.type;
+    if (activeType !== 'card') return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    const fromListId = active.data.current?.listId as string;
+
+    let toListId: string | null = null;
+    if (isListDropId(overId)) toListId = listIdFromDropId(overId);
+    else toListId = findCardContainer(cardsByListId, overId);
+    if (!toListId) return;
+
+    // preview only when moving to a different list
+    if (toListId === fromListId) return;
+
+    const toCards = cardsByListId[toListId] ?? [];
+    const toIndex = !isListDropId(overId)
+      ? toCards.findIndex((c) => c.id === overId)
+      : toCards.length;
+
+    // Avoid setState on every pixel
+    const last = lastMoveRef.current;
+    if (last && last.from === fromListId && last.to === toListId && last.overId === overId) return;
+
+    lastMoveRef.current = { from: fromListId, to: toListId, overId };
+
+    onMoveCardBetweenLists(fromListId, toListId, activeId, Math.max(0, toIndex));
+  }
+
+  async function handleDragEndInternal(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+    const activeType = active.data.current?.type;
+
+    // Lists drag
+    if (activeType !== 'card') {
+      onDragEnd(e);
+      return;
+    }
+
+    // Cards drag
+    const fromListId = active.data.current?.listId as string;
+
+    let toListId: string | null = null;
+    if (isListDropId(overId)) toListId = listIdFromDropId(overId);
+    else toListId = findCardContainer(cardsByListId, overId);
+    if (!toListId) return;
+
+    const fromCards = cardsByListId[fromListId] ?? [];
+    const toCards = cardsByListId[toListId] ?? [];
+
+    const toIndex = !isListDropId(overId)
+      ? toCards.findIndex((c) => c.id === overId)
+      : toCards.length;
+
+    // ✅ toujours commit, même si "même endroit"
+    if (toListId === fromListId) {
+      const oldIndex = fromCards.findIndex((c) => c.id === activeId);
+      const newIndex = Math.max(0, toIndex);
+      if (oldIndex < 0 || newIndex < 0) return;
+
+      // arrayMove gère aussi le cas oldIndex === newIndex (renvoie un array identique)
+      const moved = arrayMove(fromCards, oldIndex, newIndex).map((c, i) => ({ ...c, position: i }));
+
+      await onCommitCards(fromListId, fromListId, moved, moved);
+      return;
+    }
+
+    // Move across lists
+    const moving = fromCards.find((c) => c.id === activeId);
+    if (!moving) return;
+
+    const nextFromRaw = fromCards.filter((c) => c.id !== activeId);
+    const nextFrom = nextFromRaw.map((c, i) => ({ ...c, position: i }));
+
+    const insertIndex = Math.max(0, toIndex);
+    const movingUpdated: CardModel = { ...moving, list_id: toListId };
+
+    const nextToRaw = [
+      ...toCards.slice(0, insertIndex),
+      movingUpdated,
+      ...toCards.slice(insertIndex),
+    ];
+    const nextTo = nextToRaw.map((c, i) => ({ ...c, position: i }));
+
+    await onCommitCards(fromListId, toListId, nextFrom, nextTo);
+  }
+
+  async function handleDragEnd(e: DragEndEvent) {
+    try {
+      await handleDragEndInternal(e);
+    } finally {
+      lastMoveRef.current = null;
+      setActiveCardId(null);
+    }
+  }
+
   return (
     <main aria-busy={loading}>
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
         <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
           <div className={listsRowClassName}>
             {lists.map((list) => (
@@ -47,19 +217,30 @@ export default function BoardKanban({
                 onOpenCard={onOpenCard}
                 onDelete={onDeleteList}
                 onAddCard={onAddCard}
-                onReorderCards={onReorderCards}
               />
             ))}
 
             <AddListComposerBridge onAddList={onAddList} />
           </div>
         </SortableContext>
+
+        <DragOverlay dropAnimation={null}>
+          {activeCard ? (
+            <div style={{ pointerEvents: 'none' }}>
+              <BoardCard card={activeCard} onOpen={() => {}} />
+            </div>
+          ) : null}
+        </DragOverlay>
       </DndContext>
     </main>
   );
 }
 
-function AddListComposerBridge({ onAddList }: { onAddList: (title: string) => void | Promise<void> }) {
+function AddListComposerBridge({
+  onAddList,
+}: {
+  onAddList: (title: string) => void | Promise<void>;
+}) {
   const [open, setOpen] = React.useState(false);
   const [value, setValue] = React.useState('');
 

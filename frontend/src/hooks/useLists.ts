@@ -196,6 +196,57 @@ export function useLists(boardId?: string) {
     }
   }
 
+  function moveCardBetweenListsPreview(
+    fromListId: string,
+    toListId: string,
+    cardId: string,
+    toIndex: number,
+  ) {
+    setCardsByListId((prev) => {
+      const from = prev[fromListId] ?? [];
+      const to = prev[toListId] ?? [];
+
+      const moving = from.find((c) => c.id === cardId);
+      if (!moving) return prev;
+
+      const nextFrom = from.filter((c) => c.id !== cardId);
+      const movingUpdated = { ...moving, list_id: toListId };
+
+      const safeIndex = Math.max(0, Math.min(toIndex, to.length));
+      const nextTo = [...to.slice(0, safeIndex), movingUpdated, ...to.slice(safeIndex)];
+
+      return {
+        ...prev,
+        [fromListId]: nextFrom,
+        [toListId]: nextTo,
+      };
+    });
+  }
+
+  async function commitCardsMove(
+    fromListId: string,
+    toListId: string,
+    nextFrom: CardModel[],
+    nextTo: CardModel[],
+  ) {
+    const prevSnapshot = cardsByListId;
+
+    setCardsByListId((prev) => ({
+      ...prev,
+      [fromListId]: nextFrom,
+      [toListId]: nextTo,
+    }));
+
+    try {
+      await persistCardPositions(nextTo);
+      if (fromListId !== toListId) {
+        await persistCardPositions(nextFrom);
+      }
+    } catch {
+      setCardsByListId(prevSnapshot);
+    }
+  }
+
   async function persistCardPositions(nextCards: CardModel[]) {
     await Promise.all(
       nextCards.map(async (c) => {
@@ -240,5 +291,7 @@ export function useLists(boardId?: string) {
     deleteCard,
     reorderLists,
     reorderCards,
+    moveCardBetweenListsPreview,
+    commitCardsMove,
   };
 }

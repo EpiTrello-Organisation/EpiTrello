@@ -31,7 +31,9 @@ export default function BoardPage() {
     renameCard,
     deleteCard,
     reorderLists,
-    reorderCards,
+    // reorderCards,
+    moveCardBetweenListsPreview,
+    commitCardsMove,
   } = useLists(boardId);
 
   const { sensors, onDragEnd } = useSortableLists({
@@ -66,16 +68,16 @@ export default function BoardPage() {
         onOpenCard={setSelectedCard}
         onAddList={addList}
         listsRowClassName={styles.listsRow}
-        onReorderCards={reorderCards}
+        // onReorderCards={reorderCards}
+        onMoveCardBetweenLists={moveCardBetweenListsPreview}
+        onCommitCards={commitCardsMove}
       />
 
       {selectedCard ? (
         <CardModal
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
-          onRename={(nextTitle) =>
-            renameCard(selectedCard.id, selectedCard.list_id, nextTitle)
-          }
+          onRename={(nextTitle) => renameCard(selectedCard.id, selectedCard.list_id, nextTitle)}
           onDeleteCard={async () => {
             await deleteCard(selectedCard.id, selectedCard.list_id);
             setSelectedCard(null);
