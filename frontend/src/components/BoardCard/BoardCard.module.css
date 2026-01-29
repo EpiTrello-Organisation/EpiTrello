@@ -5,25 +5,27 @@
   border-radius: 10px;
   padding: 10px 10px;
   cursor: pointer;
-
   background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
-
   color: rgba(255, 255, 255, 0.92);
+  transition:
+    background 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
 }
 
 .card:hover {
-  filter: brightness(1.06);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .card:active {
-  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+
 
 .title {
   font-size: 14px;
   line-height: 1.25;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .description {
