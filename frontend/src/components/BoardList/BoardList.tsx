@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
 import styles from './BoardList.module.css';
 import EditableText from '../EditableText/EditableText';
 import BoardCard, { type CardModel } from '../BoardCard/BoardCard';
@@ -66,7 +69,7 @@ export default function BoardList({
   onRename: (listId: string, nextTitle: string) => void;
   onOpenCard: (card: CardModel) => void;
   onDelete: (listId: string) => void;
-  onAddCard: (listId: string, title: string) => Promise<void> | void;
+  onAddCard: (listId: string, title: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -123,8 +126,20 @@ export default function BoardList({
     setIsAddingCard(false);
   }
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: list.id,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(
+      transform && isDragging ? { ...transform, scaleX: 1, scaleY: 1 } : transform,
+    ),
+    transition,
+    opacity: isDragging ? 0.85 : undefined,
+  };
+
   return (
-    <section className={styles.list} ref={listRef}>
+    <section ref={setNodeRef} style={style} className={styles.list} {...attributes} {...listeners}>
       <div className={styles.listRow1}>
         <EditableText
           value={list.title}

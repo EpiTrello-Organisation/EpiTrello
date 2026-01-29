@@ -3,6 +3,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { apiFetch } from '@/api/fetcher';
 
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+
 import type { CardModel } from '../../components/BoardCard/BoardCard';
 import BoardList, { type ListModel } from '../../components/BoardList/BoardList';
 import CardModal from '../../components/CardModal/CardModal';
@@ -275,6 +287,45 @@ export default function BoardPage() {
     }
   }
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  async function persistListPositions(nextLists: ListModel[]) {
+    await Promise.all(
+      nextLists.map((l, index) =>
+        apiFetch(`/api/lists/${encodeURIComponent(l.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ position: index }),
+        }),
+      ),
+    );
+  }
+
+  function onDragEndLists(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over) return;
+    if (active.id === over.id) return;
+
+    setLists((prev) => {
+      const oldIndex = prev.findIndex((l) => l.id === String(active.id));
+      const newIndex = prev.findIndex((l) => l.id === String(over.id));
+      if (oldIndex < 0 || newIndex < 0) return prev;
+
+      const next = arrayMove(prev, oldIndex, newIndex);
+
+      queueMicrotask(() => {
+        persistListPositions(next).catch(() => {
+          // Optionnel: rollback
+        });
+      });
+
+      return next;
+    });
+  }
+
   return (
     <div className={styles.page}>
       <TopBar />
@@ -285,28 +336,32 @@ export default function BoardPage() {
       />
 
       <main className={styles.kanban} aria-busy={loadingLists || loadingCards}>
-        <div className={styles.listsRow}>
-          {lists.map((list) => (
-            <BoardList
-              key={list.id}
-              list={list}
-              cards={cardsByListId[list.id] ?? []}
-              onRename={renameList}
-              onOpenCard={openCard}
-              onDelete={deleteList}
-              onAddCard={addCard}
-            />
-          ))}
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEndLists}>
+          <SortableContext items={lists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
+            <div className={styles.listsRow}>
+              {lists.map((list) => (
+                <BoardList
+                  key={list.id}
+                  list={list}
+                  cards={cardsByListId[list.id] ?? []}
+                  onRename={renameList}
+                  onOpenCard={openCard}
+                  onDelete={deleteList}
+                  onAddCard={addCard}
+                />
+              ))}
 
-          <AddListComposer
-            open={isAddingList}
-            value={newListTitle}
-            onOpen={openAddList}
-            onChange={setNewListTitle}
-            onCancel={cancelAddList}
-            onSubmit={submitAddList}
-          />
-        </div>
+              <AddListComposer
+                open={isAddingList}
+                value={newListTitle}
+                onOpen={openAddList}
+                onChange={setNewListTitle}
+                onCancel={cancelAddList}
+                onSubmit={submitAddList}
+              />
+            </div>
+          </SortableContext>
+        </DndContext>
       </main>
 
       {selectedCard ? (
