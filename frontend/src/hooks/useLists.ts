@@ -27,10 +27,10 @@ export function useLists(boardId?: string) {
         setLists(safeLists);
 
         const entries = await Promise.all(
-          safeLists.map(async (l) => {
-            const resCards = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(l.id)}`);
+          safeLists.map(async (list) => {
+            const resCards = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(list.id)}`);
             const cards = (await resCards.json()) as CardModel[];
-            return [l.id, Array.isArray(cards) ? cards : []] as const;
+            return [list.id, Array.isArray(cards) ? cards : []] as const;
           }),
         );
 
@@ -73,8 +73,8 @@ export function useLists(boardId?: string) {
   }
 
   async function renameList(listId: string, nextTitle: string) {
-    const prevTitle = lists.find((l) => l.id === listId)?.title ?? '';
-    setLists((prev) => prev.map((l) => (l.id === listId ? { ...l, title: nextTitle } : l)));
+    const prevTitle = lists.find((list) => list.id === listId)?.title ?? '';
+    setLists((prev) => prev.map((list) => (list.id === listId ? { ...list, title: nextTitle } : list)));
 
     try {
       await apiFetch(`/api/lists/${encodeURIComponent(listId)}`, {
@@ -83,12 +83,12 @@ export function useLists(boardId?: string) {
         body: JSON.stringify({ title: nextTitle }),
       });
     } catch {
-      setLists((prev) => prev.map((l) => (l.id === listId ? { ...l, title: prevTitle } : l)));
+      setLists((prev) => prev.map((list) => (list.id === listId ? { ...list, title: prevTitle } : list)));
     }
   }
 
   async function deleteList(listId: string) {
-    setLists((prev) => prev.filter((l) => l.id !== listId));
+    setLists((prev) => prev.filter((list) => list.id !== listId));
     setCardsByListId((prev) => {
       const next = { ...prev };
       delete next[listId];
@@ -177,8 +177,8 @@ export function useLists(boardId?: string) {
 
   async function persistListPositions(nextLists: ListModel[]) {
     await Promise.all(
-      nextLists.map((l, index) =>
-        apiFetch(`/api/lists/${encodeURIComponent(l.id)}`, {
+      nextLists.map((list, index) =>
+        apiFetch(`/api/lists/${encodeURIComponent(list.id)}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ position: index }),

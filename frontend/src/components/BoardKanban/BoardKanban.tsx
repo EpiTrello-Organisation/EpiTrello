@@ -1,4 +1,3 @@
-// BoardKanban.tsx
 import React from 'react';
 import {
   DndContext,
@@ -21,15 +20,15 @@ export default function BoardKanban({
   cardsByListId,
   loading,
   sensors,
-  onDragEnd, // lists drag end (useSortableLists)
+  onDragEnd,
   onRenameList,
   onDeleteList,
   onAddCard,
   onOpenCard,
   onAddList,
   listsRowClassName,
-  onMoveCardBetweenLists, // preview UI while dragging across lists
-  onCommitCards, // persist final move/reorder (PUT always on drop)
+  onMoveCardBetweenLists,
+  onCommitCards,
 }: {
   lists: ListModel[];
   cardsByListId: Record<string, CardModel[]>;
@@ -51,7 +50,6 @@ export default function BoardKanban({
     toIndex: number,
   ) => void;
 
-  // ✅ nouvelle approche: on commit toujours au drop, pas de changedFrom/changedTo
   onCommitCards: (
     fromListId: string,
     toListId: string,
@@ -108,7 +106,6 @@ export default function BoardKanban({
     else toListId = findCardContainer(cardsByListId, overId);
     if (!toListId) return;
 
-    // preview only when moving to a different list
     if (toListId === fromListId) return;
 
     const toCards = cardsByListId[toListId] ?? [];
@@ -116,7 +113,6 @@ export default function BoardKanban({
       ? toCards.findIndex((c) => c.id === overId)
       : toCards.length;
 
-    // Avoid setState on every pixel
     const last = lastMoveRef.current;
     if (last && last.from === fromListId && last.to === toListId && last.overId === overId) return;
 
@@ -133,13 +129,11 @@ export default function BoardKanban({
     const overId = String(over.id);
     const activeType = active.data.current?.type;
 
-    // Lists drag
     if (activeType !== 'card') {
       onDragEnd(e);
       return;
     }
 
-    // Cards drag
     const fromListId = active.data.current?.listId as string;
 
     let toListId: string | null = null;
@@ -154,20 +148,17 @@ export default function BoardKanban({
       ? toCards.findIndex((c) => c.id === overId)
       : toCards.length;
 
-    // ✅ toujours commit, même si "même endroit"
     if (toListId === fromListId) {
       const oldIndex = fromCards.findIndex((c) => c.id === activeId);
       const newIndex = Math.max(0, toIndex);
       if (oldIndex < 0 || newIndex < 0) return;
 
-      // arrayMove gère aussi le cas oldIndex === newIndex (renvoie un array identique)
       const moved = arrayMove(fromCards, oldIndex, newIndex).map((c, i) => ({ ...c, position: i }));
 
       await onCommitCards(fromListId, fromListId, moved, moved);
       return;
     }
 
-    // Move across lists
     const moving = fromCards.find((c) => c.id === activeId);
     if (!moving) return;
 

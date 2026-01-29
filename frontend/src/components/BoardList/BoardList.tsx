@@ -1,21 +1,6 @@
 import { useMemo } from 'react';
-import {
-  // DndContext,
-  // PointerSensor,
-  // KeyboardSensor,
-  // closestCenter,
-  // useSensor,
-  // useSensors,
-  useDroppable,
-  // type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  // arrayMove,
-  verticalListSortingStrategy,
-  // sortableKeyboardCoordinates,
-  useSortable,
-} from '@dnd-kit/sortable';
+import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 import styles from './BoardList.module.css';
@@ -96,7 +81,7 @@ function SortableCardItem({
       transform && isDragging ? { ...transform, scaleX: 1, scaleY: 1 } : transform,
     ),
     transition,
-    // ✅ cache l’original, l’overlay reste "dans la main"
+
     opacity: isDragging ? 0 : 1,
   };
 
@@ -114,7 +99,6 @@ export default function BoardList({
   onOpenCard,
   onDelete,
   onAddCard,
-  // onReorderCards,
 }: {
   list: ListModel;
   cards: CardModel[];
@@ -122,11 +106,6 @@ export default function BoardList({
   onOpenCard: (card: CardModel) => void;
   onDelete: (listId: string) => void | Promise<void>;
   onAddCard: (listId: string, title: string) => void | Promise<void>;
-  // onReorderCards: (
-  //   listId: string,
-  //   nextCards: CardModel[],
-  //   changedCards: CardModel[],
-  // ) => void | Promise<void>;
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, style } = useSortableStyle(
     list.id,
@@ -144,37 +123,10 @@ export default function BoardList({
     submitAddCard,
   } = useAddCardComposer({ listId: list.id, onAddCard });
 
-  // const cardSensors = useSensors(
-  //   useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-  //   useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  // );
-
   const orderedCards = useMemo(
     () => cards.slice().sort((a, b) => a.position - b.position),
     [cards],
   );
-
-  // function onDragEndCards(e: DragEndEvent) {
-  //   const { active, over } = e;
-  //   if (!over || active.id === over.id) return;
-
-  //   const oldIndex = orderedCards.findIndex((c) => c.id === String(active.id));
-  //   const newIndex = orderedCards.findIndex((c) => c.id === String(over.id));
-  //   if (oldIndex < 0 || newIndex < 0) return;
-
-  //   const moved = arrayMove(orderedCards, oldIndex, newIndex);
-
-  //   const next = moved.map((c, i) => ({
-  //     ...c,
-  //     position: i,
-  //   }));
-
-  //   const start = Math.min(oldIndex, newIndex);
-  //   const end = Math.max(oldIndex, newIndex);
-  //   const changed = next.slice(start, end + 1);
-
-  //   onReorderCards(list.id, next, changed);
-  // }
 
   const droppableId = `list:${list.id}`;
   const { setNodeRef: setDroppableRef } = useDroppable({ id: droppableId });
