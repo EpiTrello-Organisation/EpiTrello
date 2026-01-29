@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { apiFetch } from '@/api/fetcher';
 
@@ -19,6 +19,8 @@ type BoardModel = {
 
 export default function BoardPage() {
   const { boardId } = useParams();
+  const navigate = useNavigate();
+
   const [board, setBoard] = useState<BoardModel | null>(null);
   const [lists, setLists] = useState<ListModel[]>([]);
   const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
@@ -135,6 +137,20 @@ export default function BoardPage() {
     }
   }
 
+  async function deleteBoard() {
+    if (!boardId) return;
+
+    try {
+      await apiFetch(`/api/boards/${encodeURIComponent(boardId)}`, {
+        method: 'DELETE',
+      });
+
+      navigate('/boards');
+    } catch {
+      // 401 handled in fetcher
+    }
+  }
+
   function openAddList() {
     setIsAddingList(true);
   }
@@ -176,7 +192,11 @@ export default function BoardPage() {
   return (
     <div className={styles.page}>
       <TopBar />
-      <BoardTopBar title={board?.title ?? 'Board'} onRename={renameBoard} />
+      <BoardTopBar
+        title={board?.title ?? 'Board'}
+        onRename={renameBoard}
+        onDeleteBoard={deleteBoard}
+      />
 
       <main className={styles.kanban} aria-busy={loadingLists || loadingCards}>
         <div className={styles.listsRow}>

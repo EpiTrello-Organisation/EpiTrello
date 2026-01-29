@@ -1,13 +1,34 @@
+import { useEffect, useRef, useState } from 'react';
 import styles from './BoardTopBar.module.css';
 import EditableText from '../EditableText/EditableText';
 
 export default function BoardTopBar({
   title,
   onRename,
+  onDeleteBoard,
 }: {
   title: string;
   onRename: (nextTitle: string) => void;
+  onDeleteBoard: () => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      const wrapperEl = menuWrapperRef.current;
+      const clickedInWrapper = !!wrapperEl && wrapperEl.contains(target);
+
+      if (!clickedInWrapper) setMenuOpen(false);
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [menuOpen]);
+
   return (
     <div className={styles.boardTopBar}>
       <EditableText
@@ -64,13 +85,36 @@ export default function BoardTopBar({
           Share
         </button>
 
-        <button type="button" className={styles.topbarIconBtn} aria-label="Board menu" title="Board menu">
-          <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
-            <circle cx="6" cy="12" r="1.7" />
-            <circle cx="12" cy="12" r="1.7" />
-            <circle cx="18" cy="12" r="1.7" />
-          </svg>
-        </button>
+        <div className={styles.boardMenuWrapper} ref={menuWrapperRef}>
+          <button
+            type="button"
+            className={styles.topbarIconBtn}
+            aria-label="Board menu"
+            title="Board menu"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
+              <circle cx="6" cy="12" r="1.7" />
+              <circle cx="12" cy="12" r="1.7" />
+              <circle cx="18" cy="12" r="1.7" />
+            </svg>
+          </button>
+
+          {menuOpen && (
+            <div className={styles.boardMenu}>
+              <button
+                type="button"
+                className={styles.boardMenuItemDanger}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDeleteBoard();
+                }}
+              >
+                Delete Board
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
