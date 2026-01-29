@@ -159,3 +159,53 @@
 .listMenuItemDanger:hover {
   background: rgba(255, 255, 255, 0.06);
 }
+
+.addCardActionsRow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addCardPrimary {
+  height: 34px;
+  padding: 0 16px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: rgba(110, 180, 255, 0.9);
+  color: #0b1220;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.addCardPrimary:hover {
+  background: rgba(110, 180, 255, 0.96);
+}
+
+.addCardCancel {
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: transparent;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+}
+
+.addCardCancel:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.iconX {
+  width: 18px;
+  height: 18px;
+}

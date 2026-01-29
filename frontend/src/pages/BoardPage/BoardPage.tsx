@@ -206,6 +206,25 @@ export default function BoardPage() {
     }
   }
 
+  async function addCard(listId: string, title: string) {
+    try {
+      const res = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(listId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+
+      const created = (await res.json()) as CardModel;
+
+      setCardsByListId((prev) => ({
+        ...prev,
+        [listId]: [...(prev[listId] ?? []), created],
+      }));
+    } catch {
+      // 401 handled in fetcher
+    }
+  }
+
   return (
     <div className={styles.page}>
       <TopBar />
@@ -225,6 +244,7 @@ export default function BoardPage() {
               onRename={renameList}
               onOpenCard={openCard}
               onDelete={deleteList}
+              onAddCard={addCard}
             />
           ))}
 

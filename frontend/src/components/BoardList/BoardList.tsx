@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './BoardList.module.css';
 import EditableText from '../EditableText/EditableText';
 import BoardCard, { type CardModel } from '../BoardCard/BoardCard';
+import AddCardComposer from '../AddCardComposer/AddCardComposer';
 
 export type ListModel = {
   id: string;
@@ -38,18 +39,34 @@ function IconTemplate() {
   );
 }
 
+function IconX() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.iconX}>
+      <path
+        d="M7 7l10 10M17 7L7 17"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function BoardList({
   list,
   cards,
   onRename,
   onOpenCard,
   onDelete,
+  onAddCard,
 }: {
   list: ListModel;
   cards: CardModel[];
   onRename: (listId: string, nextTitle: string) => void;
   onOpenCard: (card: CardModel) => void;
   onDelete: (listId: string) => void;
+  onAddCard: (listId: string, title: string) => Promise<void> | void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -68,8 +85,46 @@ export default function BoardList({
     return () => window.removeEventListener('pointerdown', onPointerDown);
   }, [menuOpen]);
 
+  const [isAddingCard, setIsAddingCard] = useState(false);
+  const [newCardTitle, setNewCardTitle] = useState('');
+
+  const listRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!isAddingCard) return;
+
+    const opts: AddEventListenerOptions = { capture: true };
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      const el = listRef.current;
+      if (el && !el.contains(target)) cancelAddCard();
+    }
+
+    window.addEventListener('pointerdown', onPointerDown, opts);
+    return () => window.removeEventListener('pointerdown', onPointerDown, opts);
+  }, [isAddingCard]);
+
+  function openAddCard() {
+    setIsAddingCard(true);
+  }
+
+  function cancelAddCard() {
+    setIsAddingCard(false);
+    setNewCardTitle('');
+  }
+
+  async function submitAddCard() {
+    const title = newCardTitle.trim();
+    if (!title) return;
+
+    await onAddCard(list.id, title);
+
+    setNewCardTitle('');
+    setIsAddingCard(false);
+  }
+
   return (
-    <section className={styles.list}>
+    <section className={styles.list} ref={listRef}>
       <div className={styles.listRow1}>
         <EditableText
           value={list.title}
@@ -113,12 +168,41 @@ export default function BoardList({
           .map((c) => (
             <BoardCard key={c.id} card={c} onOpen={() => onOpenCard(c)} />
           ))}
+
+        {isAddingCard ? (
+          <AddCardComposer
+            open
+            value={newCardTitle}
+            onOpen={() => {}}
+            onChange={setNewCardTitle}
+            onCancel={cancelAddCard}
+            onSubmit={submitAddCard}
+            showActions={false}
+          />
+        ) : null}
       </div>
 
       <div className={styles.listRow2}>
-        <button type="button" className={styles.addCardBtn}>
-          + <span>Add a card</span>
-        </button>
+        {isAddingCard ? (
+          <div className={styles.addCardActionsRow}>
+            <button type="button" className={styles.addCardPrimary} onClick={submitAddCard}>
+              Add card
+            </button>
+
+            <button
+              type="button"
+              className={styles.addCardCancel}
+              onClick={cancelAddCard}
+              aria-label="Cancel"
+            >
+              <IconX />
+            </button>
+          </div>
+        ) : (
+          <button type="button" className={styles.addCardBtn} onClick={openAddCard}>
+            + <span>Add a card</span>
+          </button>
+        )}
 
         <button
           type="button"
