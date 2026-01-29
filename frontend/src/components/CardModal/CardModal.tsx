@@ -31,7 +31,6 @@ export default function CardModal({ card, onClose }: { card: CardModel; onClose:
       className={styles.backdrop}
       role="presentation"
       onMouseDown={(e) => {
-        // close only if clicking the backdrop (not inside dialog)
         if (e.target === e.currentTarget) onClose();
       }}
     >

@@ -19,7 +19,6 @@ export default function BoardCard({ card, onOpen }: { card: CardModel; onOpen: (
       onClick={onOpen}
     >
       <div className={styles.title}>{card.title}</div>
-      {card.description ? <div className={styles.description}>{card.description}</div> : null}
     </button>
   );
 }
