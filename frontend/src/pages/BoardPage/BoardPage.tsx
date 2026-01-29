@@ -151,6 +151,23 @@ export default function BoardPage() {
     }
   }
 
+  async function deleteList(listId: string) {
+    setLists((prev) => prev.filter((l) => l.id !== listId));
+    setCardsByListId((prev) => {
+      const next = { ...prev };
+      delete next[listId];
+      return next;
+    });
+
+    try {
+      await apiFetch(`/api/lists/${encodeURIComponent(listId)}`, {
+        method: 'DELETE',
+      });
+    } catch {
+      // 401 handled in fetcher
+    }
+  }
+
   function openAddList() {
     setIsAddingList(true);
   }
@@ -207,6 +224,7 @@ export default function BoardPage() {
               cards={cardsByListId[list.id] ?? []}
               onRename={renameList}
               onOpenCard={openCard}
+              onDelete={deleteList}
             />
           ))}
 

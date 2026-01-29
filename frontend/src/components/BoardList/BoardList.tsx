@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import styles from './BoardList.module.css';
 import EditableText from '../EditableText/EditableText';
 import BoardCard, { type CardModel } from '../BoardCard/BoardCard';
@@ -42,12 +43,31 @@ export default function BoardList({
   cards,
   onRename,
   onOpenCard,
+  onDelete,
 }: {
   list: ListModel;
   cards: CardModel[];
   onRename: (listId: string, nextTitle: string) => void;
   onOpenCard: (card: CardModel) => void;
+  onDelete: (listId: string) => void;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function onPointerDown(e: PointerEvent) {
+      const target = e.target as Node;
+      const wrapperEl = menuWrapperRef.current;
+      const clickedInWrapper = !!wrapperEl && wrapperEl.contains(target);
+      if (!clickedInWrapper) setMenuOpen(false);
+    }
+
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [menuOpen]);
+
   return (
     <section className={styles.list}>
       <div className={styles.listRow1}>
@@ -59,9 +79,31 @@ export default function BoardList({
           onChange={(v) => onRename(list.id, v)}
         />
 
-        <button type="button" className={styles.iconBtn} aria-label="List menu">
-          <IconDots />
-        </button>
+        <div className={styles.listMenuWrapper} ref={menuWrapperRef}>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="List menu"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <IconDots />
+          </button>
+
+          {menuOpen && (
+            <div className={styles.listMenu}>
+              <button
+                type="button"
+                className={styles.listMenuItemDanger}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onDelete(list.id);
+                }}
+              >
+                Delete List
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.cards}>
