@@ -223,3 +223,35 @@
   opacity: 0.85;
   flex-shrink: 0;
 }
+
+.quickActionWrapper {
+  position: relative;
+}
+
+.quickActionBtnActive {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.labelsCategory {
+  padding: 14px 16px 6px;
+}
+
+.labelsCategoryTitle {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-bottom: 10px;
+}
+
+.labelsSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.labelsSwatch {
+  height: 30px;
+  width: 48px;
+  border-radius: 4px;
+}

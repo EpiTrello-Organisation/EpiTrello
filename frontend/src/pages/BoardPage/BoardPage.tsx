@@ -43,6 +43,17 @@ export default function BoardPage() {
 
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
 
+  function updateCardLabels(cardId: string, listId: string, nextLabelIds: string[]) {
+    setSelectedCard((prev) =>
+      prev && prev.id === cardId ? { ...prev, labelIds: nextLabelIds } : prev,
+    );
+
+    // Mise à jour visuelle immédiate dans les listes
+    cardsByListId[listId] = cardsByListId[listId].map((c) =>
+      c.id === cardId ? { ...c, labelIds: nextLabelIds } : c,
+    );
+  }
+
   return (
     <div className={styles.page}>
       <TopBar />
@@ -81,6 +92,9 @@ export default function BoardPage() {
           onDeleteCard={async () => {
             await deleteCard(selectedCard.id, selectedCard.list_id);
             setSelectedCard(null);
+          }}
+          onUpdateLabels={(nextLabelIds) => {
+            updateCardLabels(selectedCard.id, selectedCard.list_id, nextLabelIds);
           }}
         />
       ) : null}

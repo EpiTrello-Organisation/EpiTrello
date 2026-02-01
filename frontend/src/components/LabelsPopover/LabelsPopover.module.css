@@ -1,0 +1,188 @@
+.popover {
+  position: absolute;
+  top: 32px;
+  left: 0;
+  width: 240px;
+
+  background: #2b2d31;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+
+  padding: 8px;
+  z-index: 50;
+}
+
+.header {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 2px 0 6px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.close {
+  position: absolute;
+  right: 0;
+  top: 0;
+
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.closeIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.searchRow {
+  position: relative;
+  margin: 4px 0 8px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  opacity: 0.55;
+}
+
+.search {
+  width: 100%;
+  height: 32px;
+  border-radius: 8px;
+
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 12px;
+  padding: 0 10px 0 28px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.search:focus {
+  border-color: rgba(145, 180, 235, 0.75);
+}
+
+.sectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.85;
+  margin: 4px 0 6px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 20px 1fr 28px;
+  align-items: center;
+  gap: 6px;
+}
+
+.check {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.check input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.customBox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1.5px solid rgba(255, 255, 255, 0.24);
+  background: transparent;
+}
+
+.check input:checked + .customBox {
+  border-color: rgba(145, 180, 235, 0.85);
+  background: rgba(145, 180, 235, 0.2);
+}
+
+.colorBtn {
+  height: 26px;
+  width: 100%;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.editBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.editBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.editIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.footer {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.footerBtn {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.footerBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

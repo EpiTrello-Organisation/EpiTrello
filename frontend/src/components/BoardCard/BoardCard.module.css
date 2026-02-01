@@ -40,3 +40,16 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.labelStripes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.labelStripe {
+  height: 8px;
+  width: 44px;
+  border-radius: 999px;
+}

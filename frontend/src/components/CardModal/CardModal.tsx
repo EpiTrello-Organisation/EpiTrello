@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { LABELS } from '@/constants/labels';
 import styles from './CardModal.module.css';
 import type { CardModel } from '../BoardCard/BoardCard';
 import EditableText from '../EditableText/EditableText';
+import LabelsPopover from '../LabelsPopover/LabelsPopover';
 import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 
 function IconDots() {
@@ -19,16 +21,35 @@ export default function CardModal({
   onClose,
   onRename,
   onDeleteCard,
+  onUpdateLabels,
 }: {
   card: CardModel;
   onClose: () => void;
   onRename: (nextTitle: string) => void;
   onDeleteCard: () => void;
+
+  onUpdateLabels: (nextLabelIds: string[]) => void;
 }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuWrapperRef = useRef<HTMLDivElement | null>(null);
+
+  const [labelsOpen, setLabelsOpen] = useState(false);
+  const labelsAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  const onIds = new Set(card.labelIds ?? []);
+  const activeLabels = LABELS.filter((l) => onIds.has(l.id)); // ordre garanti par LABELS
+
+  const selectedSet = useMemo(() => new Set(card.labelIds ?? []), [card.labelIds]);
+
+  function toggleLabel(labelId: string) {
+    const next = new Set(selectedSet);
+    if (next.has(labelId)) next.delete(labelId);
+    else next.add(labelId);
+
+    onUpdateLabels(Array.from(next));
+  }
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -65,6 +86,12 @@ export default function CardModal({
     window.addEventListener('pointerdown', onPointerDown, opts);
     return () => window.removeEventListener('pointerdown', onPointerDown, opts);
   }, [menuOpen]);
+
+  useEffect(() => {
+    return () => {
+      setLabelsOpen(false);
+    };
+  }, []);
 
   return (
     <div
@@ -132,10 +159,29 @@ export default function CardModal({
         </div>
 
         <div className={styles.quickActions}>
-          <button className={styles.quickActionBtn} type="button">
-            <TagIcon className={styles.quickActionIcon} />
-            Labels
-          </button>
+          <div className={styles.quickActionWrapper} ref={labelsAnchorRef}>
+            <button
+              className={`${styles.quickActionBtn} ${
+                labelsOpen ? styles.quickActionBtnActive : ''
+              }`}
+              type="button"
+              onClick={() => setLabelsOpen((v) => !v)}
+              aria-haspopup="dialog"
+              aria-expanded={labelsOpen}
+            >
+              <TagIcon className={styles.quickActionIcon} />
+              Labels
+            </button>
+
+            <LabelsPopover
+              open={labelsOpen}
+              anchorRef={labelsAnchorRef}
+              onClose={() => setLabelsOpen(false)}
+              labels={LABELS}
+              selectedIds={card.labelIds ?? []}
+              onToggle={toggleLabel}
+            />
+          </div>
 
           <button className={styles.quickActionBtn} type="button">
             <CalendarIcon className={styles.quickActionIcon} />
@@ -152,6 +198,23 @@ export default function CardModal({
             Members
           </button>
         </div>
+
+        {activeLabels.length > 0 && (
+          <div className={styles.labelsCategory}>
+            <div className={styles.labelsCategoryTitle}>Labels</div>
+
+            <div className={styles.labelsSwatches}>
+              {activeLabels.map((l) => (
+                <div
+                  key={l.id}
+                  className={styles.labelsSwatch}
+                  style={{ background: l.color }}
+                  aria-hidden="true"
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className={styles.content}>
           <div className={styles.body}>
