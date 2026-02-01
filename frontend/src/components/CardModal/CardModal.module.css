@@ -186,3 +186,40 @@
 .metaValue {
   opacity: 0.95;
 }
+
+.quickActions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px 4px;
+  flex-wrap: wrap;
+}
+
+.quickActionBtn {
+  height: 28px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.quickActionBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.quickActionIcon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.8;
+  opacity: 0.85;
+  flex-shrink: 0;
+}

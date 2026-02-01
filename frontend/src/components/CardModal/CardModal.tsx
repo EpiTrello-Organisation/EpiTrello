@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './CardModal.module.css';
 import type { CardModel } from '../BoardCard/BoardCard';
 import EditableText from '../EditableText/EditableText';
+import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 
 function IconDots() {
   return (
@@ -129,6 +130,29 @@ export default function CardModal({
             </button>
           </div>
         </div>
+
+        <div className={styles.quickActions}>
+          <button className={styles.quickActionBtn} type="button">
+            <TagIcon className={styles.quickActionIcon} />
+            Labels
+          </button>
+
+          <button className={styles.quickActionBtn} type="button">
+            <CalendarIcon className={styles.quickActionIcon} />
+            Dates
+          </button>
+
+          <button className={styles.quickActionBtn} type="button">
+            <CheckCircleIcon className={styles.quickActionIcon} />
+            Checklist
+          </button>
+
+          <button className={styles.quickActionBtn} type="button">
+            <UserIcon className={styles.quickActionIcon} />
+            Members
+          </button>
+        </div>
+
         <div className={styles.content}>
           <div className={styles.body}>
             <div className={styles.sectionTitle}>Description</div>
@@ -141,7 +165,9 @@ export default function CardModal({
             <div className={styles.meta}>
               <div>
                 <span className={styles.metaLabel}>Created</span>
-                <span className={styles.metaValue}>{new Date(card.created_at).toLocaleString()}</span>
+                <span className={styles.metaValue}>
+                  {new Date(card.created_at).toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
