@@ -87,9 +87,11 @@
 }
 
 .profileButton {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: none;
+  padding: 0;
+  line-height: 0;
   background: transparent;
   border-radius: 999px;
   cursor: pointer;
@@ -102,12 +104,14 @@
 }
 
 .avatar {
+  display: block;
   width: 28px;
   height: 28px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.18);
 }
+
 
 .profileWrapper {
   position: relative;

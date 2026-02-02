@@ -5,9 +5,10 @@ import SignUpPage from './pages/SignUpPage/SignUpPage';
 import LogInPage from './pages/LogInPage/LogInPage';
 import BoardsPage from './pages/BoardsPage/BoardsPage';
 import TemplatesPage from './pages/TemplatesPage/TemplatesPage';
+import BoardPage from './pages/BoardPage/BoardPage';
 import './App.css';
 
-import ProtectedRoute from './auth/ProtectexRoute';
+import ProtectedRoute from './auth/ProtectedRoute';
 import { isAuthenticated } from '@/auth/token';
 
 export default function App() {
@@ -33,6 +34,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <TemplatesPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/boards/:boardId"
+        element={
+          <ProtectedRoute>
+            <BoardPage />
           </ProtectedRoute>
         }
       />

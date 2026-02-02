@@ -1,0 +1,36 @@
+.page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #7b5cff, #f17ac6);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.boardTopBar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: rgba(0, 0, 0, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.boardName {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kanban {
+  height: calc(100vh - 56px - 48px);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.listsRow {
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 14px;
+  min-width: max-content;
+  box-sizing: border-box;
+}

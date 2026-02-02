@@ -111,6 +111,10 @@ def update_card(
         card.title = card_in.title
     if card_in.description is not None:
         card.description = card_in.description
+    if card_in.position is not None:
+        card.position = card_in.position
+    if card_in.list_id is not None:
+        card.list_id = card_in.list_id
 
     db.commit()
     db.refresh(card)
