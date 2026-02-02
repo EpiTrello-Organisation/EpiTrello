@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/9</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/13</span>
+                <span class='fraction'>13/13</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -101,75 +101,75 @@
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">18x</span>
+<span class="cline-any cline-yes">10x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">20x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">18x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">17x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export type ThemePreference = 'light' | 'dark' | 'system';
 &nbsp;
-const STORAGE_KEY = <span class="cstat-no" title="statement not covered" >'theme-preference';</span>
+const STORAGE_KEY = 'theme-preference';
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >readThemePreference(): ThemePreference {</span>
-  const v = <span class="cstat-no" title="statement not covered" >localStorage.getItem(STORAGE_KEY);</span>
-<span class="cstat-no" title="statement not covered" >  if (v === 'light' || v === 'dark' || v === 'system') <span class="cstat-no" title="statement not covered" >return v;</span></span>
-<span class="cstat-no" title="statement not covered" >  return 'system';</span>
+export function readThemePreference(): ThemePreference {
+  const v = localStorage.getItem(STORAGE_KEY);
+  if (v === 'light' || v === 'dark' || v === 'system') return v;
+  return 'system';
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >getSystemTheme(): 'light' | 'dark' {</span>
-<span class="cstat-no" title="statement not covered" >  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';</span>
+export function getSystemTheme(): 'light' | 'dark' {
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >resolveTheme(p</span>ref: ThemePreference): 'light' | 'dark' {
-<span class="cstat-no" title="statement not covered" >  return pref === 'system' ? getSystemTheme() : pref;</span>
+export function resolveTheme(pref: ThemePreference): 'light' | 'dark' {
+  return pref === 'system' ? getSystemTheme() : pref;
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >applyThemeToDocument(t</span>heme: 'light' | 'dark') {
-<span class="cstat-no" title="statement not covered" >  document.documentElement.dataset.theme = theme;</span>
+export function applyThemeToDocument(theme: 'light' | 'dark') {
+  document.documentElement.dataset.theme = theme;
 }
 &nbsp;
 // Called before React to prevent flashbang effect
-export function <span class="fstat-no" title="function not covered" >bootstrapTheme() {</span>
-<span class="cstat-no" title="statement not covered" >  try {</span>
-    const pref = <span class="cstat-no" title="statement not covered" >readThemePreference();</span>
-    const theme = <span class="cstat-no" title="statement not covered" >resolveTheme(pref);</span>
-<span class="cstat-no" title="statement not covered" >    applyThemeToDocument(theme);</span>
+export function bootstrapTheme() {
+  try {
+    const pref = readThemePreference();
+    const theme = resolveTheme(pref);
+    applyThemeToDocument(theme);
   } catch {
-<span class="cstat-no" title="statement not covered" >    applyThemeToDocument(getSystemTheme());</span>
+    applyThemeToDocument(getSystemTheme());
   }
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >writeThemePreference(p</span>ref: ThemePreference) {
-<span class="cstat-no" title="statement not covered" >  localStorage.setItem(STORAGE_KEY, pref);</span>
+export function writeThemePreference(pref: ThemePreference) {
+  localStorage.setItem(STORAGE_KEY, pref);
 }
 &nbsp;</pre></td></tr></table></pre>
 
@@ -178,7 +178,7 @@ export function <span class="fstat-no" title="function not covered" >writeThemeP
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-02-02T03:12:41.223Z
+                at 2026-02-02T03:15:42.031Z
             </div>
         <script src="../prettify.js"></script>
         <script>
