@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '@/api/fetcher';
 import type { CardModel } from '@/components/BoardCard/BoardCard';
 import type { ListModel } from '@/components/BoardList/BoardList';
 
-export function useLists(boardId?: string) {
-  const [lists, setLists] = useState<ListModel[]>([]);
+export function useCard(boardId?: string, lists?: ListModel[]) {
   const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
-  const [loadingLists, setLoadingLists] = useState(true);
   const [loadingCards, setLoadingCards] = useState(false);
+
+  const listIdsKey = useMemo(() => {
+    const ids = (lists ?? []).map((l) => l.id);
+    return ids.join('|');
+  }, [lists]);
 
   useEffect(() => {
     let cancelled = false;
@@ -15,17 +18,10 @@ export function useLists(boardId?: string) {
     async function load() {
       if (!boardId) return;
 
-      setLoadingLists(true);
+      const safeLists = Array.isArray(lists) ? lists : [];
       setLoadingCards(true);
 
       try {
-        const resLists = await apiFetch(`/api/lists/board/${encodeURIComponent(boardId)}`);
-        const listsData = (await resLists.json()) as ListModel[];
-        const safeLists = Array.isArray(listsData) ? listsData : [];
-
-        if (cancelled) return;
-        setLists(safeLists);
-
         const entries = await Promise.all(
           safeLists.map(async (list) => {
             const resCards = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(list.id)}`);
@@ -36,15 +32,9 @@ export function useLists(boardId?: string) {
 
         if (!cancelled) setCardsByListId(Object.fromEntries(entries));
       } catch {
-        if (!cancelled) {
-          setLists([]);
-          setCardsByListId({});
-        }
+        if (!cancelled) setCardsByListId({});
       } finally {
-        if (!cancelled) {
-          setLoadingLists(false);
-          setLoadingCards(false);
-        }
+        if (!cancelled) setLoadingCards(false);
       }
     }
 
@@ -52,55 +42,8 @@ export function useLists(boardId?: string) {
     return () => {
       cancelled = true;
     };
-  }, [boardId]);
-
-  async function addList(titleRaw: string) {
-    const title = titleRaw.trim();
-    if (!title || !boardId) return;
-
-    try {
-      const res = await apiFetch(`/api/lists/?board_id=${encodeURIComponent(boardId)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-
-      const created = (await res.json()) as ListModel;
-      setLists((prev) => [...prev, created]);
-    } catch {
-      //
-    }
-  }
-
-  async function renameList(listId: string, nextTitle: string) {
-    const prevTitle = lists.find((list) => list.id === listId)?.title ?? '';
-    setLists((prev) => prev.map((list) => (list.id === listId ? { ...list, title: nextTitle } : list)));
-
-    try {
-      await apiFetch(`/api/lists/${encodeURIComponent(listId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: nextTitle }),
-      });
-    } catch {
-      setLists((prev) => prev.map((list) => (list.id === listId ? { ...list, title: prevTitle } : list)));
-    }
-  }
-
-  async function deleteList(listId: string) {
-    setLists((prev) => prev.filter((list) => list.id !== listId));
-    setCardsByListId((prev) => {
-      const next = { ...prev };
-      delete next[listId];
-      return next;
-    });
-
-    try {
-      await apiFetch(`/api/lists/${encodeURIComponent(listId)}`, { method: 'DELETE' });
-    } catch {
-      //
-    }
-  }
+    // on dépend du contenu (ids) des listes pour re-fetch quand une liste apparaît/disparaît
+  }, [boardId, listIdsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function addCard(listId: string, titleRaw: string) {
     const title = titleRaw.trim();
@@ -175,27 +118,6 @@ export function useLists(boardId?: string) {
     }
   }
 
-  async function persistListPositions(nextLists: ListModel[]) {
-    await Promise.all(
-      nextLists.map((list, index) =>
-        apiFetch(`/api/lists/${encodeURIComponent(list.id)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ position: index }),
-        }),
-      ),
-    );
-  }
-
-  async function reorderLists(nextLists: ListModel[]) {
-    setLists(nextLists);
-    try {
-      await persistListPositions(nextLists);
-    } catch {
-      //
-    }
-  }
-
   function moveCardBetweenListsPreview(
     fromListId: string,
     toListId: string,
@@ -221,30 +143,6 @@ export function useLists(boardId?: string) {
         [toListId]: nextTo,
       };
     });
-  }
-
-  async function commitCardsMove(
-    fromListId: string,
-    toListId: string,
-    nextFrom: CardModel[],
-    nextTo: CardModel[],
-  ) {
-    const prevSnapshot = cardsByListId;
-
-    setCardsByListId((prev) => ({
-      ...prev,
-      [fromListId]: nextFrom,
-      [toListId]: nextTo,
-    }));
-
-    try {
-      await persistCardPositions(nextTo);
-      if (fromListId !== toListId) {
-        await persistCardPositions(nextFrom);
-      }
-    } catch {
-      setCardsByListId(prevSnapshot);
-    }
   }
 
   async function persistCardPositions(nextCards: CardModel[]) {
@@ -278,18 +176,36 @@ export function useLists(boardId?: string) {
     await persistCardPositions(nextCards);
   }
 
+  async function commitCardsMove(
+    fromListId: string,
+    toListId: string,
+    nextFrom: CardModel[],
+    nextTo: CardModel[],
+  ) {
+    const prevSnapshot = cardsByListId;
+
+    setCardsByListId((prev) => ({
+      ...prev,
+      [fromListId]: nextFrom,
+      [toListId]: nextTo,
+    }));
+
+    try {
+      await persistCardPositions(nextTo);
+      if (fromListId !== toListId) {
+        await persistCardPositions(nextFrom);
+      }
+    } catch {
+      setCardsByListId(prevSnapshot);
+    }
+  }
+
   return {
-    lists,
     cardsByListId,
-    loadingLists,
     loadingCards,
-    addList,
-    renameList,
-    deleteList,
     addCard,
     renameCard,
     deleteCard,
-    reorderLists,
     reorderCards,
     moveCardBetweenListsPreview,
     commitCardsMove,

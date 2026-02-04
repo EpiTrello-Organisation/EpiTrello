@@ -8,7 +8,8 @@ import TopBar from '@/components/TopBar/TopBar';
 import BoardKanban from '@/components/BoardKanban/BoardKanban';
 
 import { useBoard } from '@/hooks/useBoard';
-import { useLists } from '@/hooks/useLists';
+import { useList } from '@/hooks/useList';
+import { useCard } from '@/hooks/useCard';
 import { useSortableLists } from '@/hooks/useSortableLists';
 
 import styles from './BoardPage.module.css';
@@ -21,20 +22,22 @@ export default function BoardPage() {
 
   const {
     lists,
-    cardsByListId,
     loadingLists,
-    loadingCards,
     addList,
     renameList,
     deleteList,
+    reorderLists,
+  } = useList(boardId);
+
+  const {
+    cardsByListId,
+    loadingCards,
     addCard,
     renameCard,
     deleteCard,
-    reorderLists,
-    // reorderCards,
     moveCardBetweenListsPreview,
     commitCardsMove,
-  } = useLists(boardId);
+  } = useCard(boardId, lists);
 
   const { sensors, onDragEnd } = useSortableLists({
     lists,
@@ -48,10 +51,11 @@ export default function BoardPage() {
       prev && prev.id === cardId ? { ...prev, labelIds: nextLabelIds } : prev,
     );
 
-    // Mise à jour visuelle immédiate dans les listes
-    cardsByListId[listId] = cardsByListId[listId].map((c) =>
-      c.id === cardId ? { ...c, labelIds: nextLabelIds } : c,
-    );
+    // TODO:
+    // - soit tu ajoutes une API backend + méthode hook (useCard.updateCard / patchCard)
+    // - soit tu gardes une state locale "cardsByListIdLocal" dans BoardPage
+    // Là, on évite de muter cardsByListId directement (React state).
+    void listId;
   }
 
   return (
@@ -79,7 +83,6 @@ export default function BoardPage() {
         onOpenCard={setSelectedCard}
         onAddList={addList}
         listsRowClassName={styles.listsRow}
-        // onReorderCards={reorderCards}
         onMoveCardBetweenLists={moveCardBetweenListsPreview}
         onCommitCards={commitCardsMove}
       />
