@@ -18,30 +18,20 @@ export default function BoardPage() {
   const { boardId } = useParams();
   const navigate = useNavigate();
 
-  const { board, renameBoard, deleteBoard } = useBoard(boardId);
+  const { board, loadingBoard, actions: boardActions } = useBoard(boardId);
 
-  const {
-    lists,
-    loadingLists,
-    addList,
-    renameList,
-    deleteList,
-    reorderLists,
-  } = useList(boardId);
+  const { lists, loadingLists, actions: listActions, dnd: listDnd } = useList(boardId);
 
   const {
     cardsByListId,
     loadingCards,
-    addCard,
-    renameCard,
-    deleteCard,
-    moveCardBetweenListsPreview,
-    commitCardsMove,
+    actions: cardActions,
+    dnd: cardDnd,
   } = useCard(boardId, lists);
 
   const { sensors, onDragEnd } = useSortableLists({
     lists,
-    onReorder: reorderLists,
+    onReorder: listDnd.reorderLists,
   });
 
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
@@ -50,12 +40,7 @@ export default function BoardPage() {
     setSelectedCard((prev) =>
       prev && prev.id === cardId ? { ...prev, labelIds: nextLabelIds } : prev,
     );
-
-    // TODO:
-    // - soit tu ajoutes une API backend + méthode hook (useCard.updateCard / patchCard)
-    // - soit tu gardes une state locale "cardsByListIdLocal" dans BoardPage
-    // Là, on évite de muter cardsByListId directement (React state).
-    void listId;
+    cardActions.setCardLabelsLocal(cardId, listId, nextLabelIds);
   }
 
   return (
@@ -64,9 +49,9 @@ export default function BoardPage() {
 
       <BoardTopBar
         title={board?.title ?? 'Board'}
-        onRename={renameBoard}
+        onRename={boardActions.renameBoard}
         onDeleteBoard={async () => {
-          const ok = await deleteBoard();
+          const ok = await boardActions.deleteBoard();
           if (ok) navigate('/boards');
         }}
       />
@@ -74,26 +59,28 @@ export default function BoardPage() {
       <BoardKanban
         lists={lists}
         cardsByListId={cardsByListId}
-        loading={loadingLists || loadingCards}
+        loading={loadingBoard || loadingLists || loadingCards}
         sensors={sensors}
         onDragEnd={onDragEnd}
-        onRenameList={renameList}
-        onDeleteList={deleteList}
-        onAddCard={addCard}
+        onRenameList={listActions.renameList}
+        onDeleteList={listActions.deleteList}
+        onAddCard={cardActions.addCard}
         onOpenCard={setSelectedCard}
-        onAddList={addList}
+        onAddList={listActions.addList}
         listsRowClassName={styles.listsRow}
-        onMoveCardBetweenLists={moveCardBetweenListsPreview}
-        onCommitCards={commitCardsMove}
+        onMoveCardBetweenLists={cardDnd.moveCardBetweenListsPreview}
+        onCommitCards={cardDnd.commitCardsMove}
       />
 
       {selectedCard ? (
         <CardModal
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
-          onRename={(nextTitle) => renameCard(selectedCard.id, selectedCard.list_id, nextTitle)}
+          onRename={(nextTitle) =>
+            cardActions.renameCard(selectedCard.id, selectedCard.list_id, nextTitle)
+          }
           onDeleteCard={async () => {
-            await deleteCard(selectedCard.id, selectedCard.list_id);
+            await cardActions.deleteCard(selectedCard.id, selectedCard.list_id);
             setSelectedCard(null);
           }}
           onUpdateLabels={(nextLabelIds) => {
