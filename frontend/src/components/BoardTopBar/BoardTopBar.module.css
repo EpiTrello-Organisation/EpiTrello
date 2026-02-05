@@ -1,0 +1,156 @@
+.boardTopBar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  background: rgba(0, 0, 0, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.boardName {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.boardNameButton {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
+  font-weight: 700;
+
+  padding: 6px 8px;
+  border-radius: 10px;
+
+  max-width: 520px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.boardNameButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.boardNameInput {
+  height: 34px;
+  width: min(520px, 100%);
+  border-radius: 10px;
+
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(145, 180, 235, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 17px;
+  font-weight: 700;
+
+  padding: 0 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.boardTopBarRight {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbarIconBtn {
+  height: 32px;
+  width: 32px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+}
+
+.topbarIconBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+}
+
+.shareBtn {
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.shareBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.avatars {
+  display: flex;
+  align-items: center;
+  margin-right: 2px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  background: rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  margin-left: -6px;
+}
+
+.avatar:first-child {
+  margin-left: 0;
+}
+
+.boardMenuWrapper {
+  position: relative;
+}
+
+.boardMenu {
+  position: absolute;
+  top: 44px; /* même feeling que TopBar */
+  right: 0;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+
+.boardMenuItemDanger {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.boardMenuItemDanger:hover {
+  background: rgba(255, 255, 255, 0.06);
+}

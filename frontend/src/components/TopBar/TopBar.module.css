@@ -1,0 +1,162 @@
+.bar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #1f1f21;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trelloButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #ffffff; /* texte blanc */
+}
+
+.trelloButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.trelloText {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.trelloIcon {
+  width: 22px;
+  height: 22px;
+  fill: #ffffff;
+  opacity: 0.95;
+}
+
+.trelloIconInner {
+  fill: #1f1f21;
+  opacity: 0.9;
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.search {
+  width: min(520px, 100%);
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.search::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.search:focus {
+  outline: none;
+  border-color: rgba(103, 157, 241, 0.8);
+  box-shadow: 0 0 0 2px rgba(103, 157, 241, 0.25);
+}
+
+.createButton {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: #679df1; /* background create button */
+  color: #1f1f21; /* texte create button */
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.createButton:hover {
+  filter: brightness(1.03);
+}
+
+.profileButton {
+  width: 28px;
+  height: 28px;
+  border: none;
+  padding: 0;
+  line-height: 0;
+  background: transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.profileButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.avatar {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.profileWrapper {
+  position: relative;
+}
+
+.profileMenu {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 100;
+}
+
+.themeMenu {
+  position: absolute;
+  top: 0;
+  right: 170px;
+  background: #1f1f21;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menuItem {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}

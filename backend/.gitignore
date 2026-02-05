@@ -1,0 +1,62 @@
+########################
+# 🐍 Python
+########################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.env
+.env.*
+.venv/
+venv/
+ENV/
+env/
+
+########################
+# 🧪 Python tools
+########################
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+########################
+# 🗃️ Alembic
+########################
+alembic/versions/__pycache__/
+
+########################
+# 🐳 Docker
+########################
+docker-compose.override.yml
+
+########################
+# 🗄️ PostgreSQL
+########################
+*.log
+pgdata/
+postgres_data/
+
+########################
+# 🧠 IDE / OS
+########################
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+########################
+# 📄 Logs
+########################
+logs/
+*.log
+
+########################
+# 🔐 Secrets
+########################
+*.pem
+*.key
