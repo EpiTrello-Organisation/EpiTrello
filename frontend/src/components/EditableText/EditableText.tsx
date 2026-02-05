@@ -8,7 +8,13 @@ type Props = {
   ariaLabel: string;
 };
 
-export default function EditableText({ value, className, inputClassName, onChange, ariaLabel }: Props) {
+export default function EditableText({
+  value,
+  className,
+  inputClassName,
+  onChange,
+  ariaLabel,
+}: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
@@ -22,7 +28,12 @@ export default function EditableText({ value, className, inputClassName, onChang
 
   if (!editing) {
     return (
-      <button type="button" className={className} onClick={() => setEditing(true)} aria-label={ariaLabel}>
+      <button
+        type="button"
+        className={className}
+        onClick={() => setEditing(true)}
+        aria-label={ariaLabel}
+      >
         {value}
       </button>
     );

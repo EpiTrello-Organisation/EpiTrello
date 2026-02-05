@@ -265,69 +265,69 @@ describe('components/CardModal', () => {
     expect(screen.queryByTestId('LabelsPopover')).toBeNull();
   });
 
-//   it('LabelsPopover onClose closes it', () => {
-//     render(
-//       <CardModal
-//         card={makeCard()}
-//         onClose={vi.fn()}
-//         onRename={vi.fn()}
-//         onDeleteCard={vi.fn()}
-//         onUpdateLabels={vi.fn()}
-//       />,
-//     );
+  //   it('LabelsPopover onClose closes it', () => {
+  //     render(
+  //       <CardModal
+  //         card={makeCard()}
+  //         onClose={vi.fn()}
+  //         onRename={vi.fn()}
+  //         onDeleteCard={vi.fn()}
+  //         onUpdateLabels={vi.fn()}
+  //       />,
+  //     );
 
-//     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
-//     expect(screen.getByTestId('LabelsPopover')).toBeTruthy();
+  //     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
+  //     expect(screen.getByTestId('LabelsPopover')).toBeTruthy();
 
-//     fireEvent.click(screen.getByRole('button', { name: 'POPOVER_CLOSE' }));
-//     expect(screen.queryByTestId('LabelsPopover')).toBeNull();
-//   });
+  //     fireEvent.click(screen.getByRole('button', { name: 'POPOVER_CLOSE' }));
+  //     expect(screen.queryByTestId('LabelsPopover')).toBeNull();
+  //   });
 
-//   it('toggleLabel adds/removes id and calls onUpdateLabels', async () => {
-//     const onUpdateLabels = vi.fn();
+  //   it('toggleLabel adds/removes id and calls onUpdateLabels', async () => {
+  //     const onUpdateLabels = vi.fn();
 
-//     const { rerender } = render(
-//       <CardModal
-//         card={makeCard({ labelIds: ['red'] })}
-//         onClose={vi.fn()}
-//         onRename={vi.fn()}
-//         onDeleteCard={vi.fn()}
-//         onUpdateLabels={onUpdateLabels}
-//       />,
-//     );
+  //     const { rerender } = render(
+  //       <CardModal
+  //         card={makeCard({ labelIds: ['red'] })}
+  //         onClose={vi.fn()}
+  //         onRename={vi.fn()}
+  //         onDeleteCard={vi.fn()}
+  //         onUpdateLabels={onUpdateLabels}
+  //       />,
+  //     );
 
-//     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
+  //     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
 
-//     await waitFor(() => {
-//       expect(screen.getByTestId('LabelsPopover')).toBeTruthy();
-//     });
+  //     await waitFor(() => {
+  //       expect(screen.getByTestId('LabelsPopover')).toBeTruthy();
+  //     });
 
-//     fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_GREEN' }));
+  //     fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_GREEN' }));
 
-//     const added = onUpdateLabels.mock.calls[0][0] as string[];
-//     expect(new Set(added)).toEqual(new Set(['red', 'green']));
+  //     const added = onUpdateLabels.mock.calls[0][0] as string[];
+  //     expect(new Set(added)).toEqual(new Set(['red', 'green']));
 
-//     onUpdateLabels.mockClear();
+  //     onUpdateLabels.mockClear();
 
-//     rerender(
-//       <CardModal
-//         card={makeCard({ labelIds: ['red', 'green'] })}
-//         onClose={vi.fn()}
-//         onRename={vi.fn()}
-//         onDeleteCard={vi.fn()}
-//         onUpdateLabels={onUpdateLabels}
-//       />,
-//     );
+  //     rerender(
+  //       <CardModal
+  //         card={makeCard({ labelIds: ['red', 'green'] })}
+  //         onClose={vi.fn()}
+  //         onRename={vi.fn()}
+  //         onDeleteCard={vi.fn()}
+  //         onUpdateLabels={onUpdateLabels}
+  //       />,
+  //     );
 
-//     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
+  //     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
 
-//     await waitFor(() => expect(screen.getByTestId('LabelsPopover')).toBeTruthy());
+  //     await waitFor(() => expect(screen.getByTestId('LabelsPopover')).toBeTruthy());
 
-//     fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_GREEN' }));
+  //     fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_GREEN' }));
 
-//     const removed = onUpdateLabels.mock.calls[0][0] as string[];
-//     expect(new Set(removed)).toEqual(new Set(['red']));
-//   });
+  //     const removed = onUpdateLabels.mock.calls[0][0] as string[];
+  //     expect(new Set(removed)).toEqual(new Set(['red']));
+  //   });
 
   it('renders labels swatches only when activeLabels exist', () => {
     const { unmount } = render(

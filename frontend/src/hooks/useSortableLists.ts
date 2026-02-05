@@ -1,4 +1,10 @@
-import { useSensor, useSensors, PointerSensor, KeyboardSensor, type DragEndEvent } from '@dnd-kit/core';
+import {
+  useSensor,
+  useSensors,
+  PointerSensor,
+  KeyboardSensor,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import type { ListModel } from '@/components/BoardList/BoardList';
 
