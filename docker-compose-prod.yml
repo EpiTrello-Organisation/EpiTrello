@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: trello_db
+    environment:
+      POSTGRES_USER: trello
+      POSTGRES_PASSWORD: trello
+      POSTGRES_DB: trello
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    # Replace OWNER/REPO with your GitHub repo, e.g. ghcr.io/dyrockw/epitrello-backend:v0.2.0
+    image: ghcr.io/EpiTrello-Organisation/EpiTrello-backend:v0.2.0
+    container_name: trello_api
+    environment:
+      DATABASE_URL: postgresql://trello:trello@db:5432/trello
+      # JWT_SECRET: change-me
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/EpiTrello-Organisation/EpiTrello-frontend:v0.2.0
+    container_name: trello_front
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
