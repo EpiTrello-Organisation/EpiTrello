@@ -4,9 +4,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import CardModal from './CardModal';
 import type { CardModel } from '../BoardCard/BoardCard';
 
-/** -------------------------
- *  Mock LABELS (deterministic)
- *  ------------------------- */
 vi.mock('@/constants/labels', () => ({
   LABELS: [
     { id: 'green', color: '#00ff00' },
@@ -15,9 +12,6 @@ vi.mock('@/constants/labels', () => ({
   ],
 }));
 
-/** -------------------------
- *  Mock EditableText (so we can trigger onChange easily)
- *  ------------------------- */
 vi.mock('../EditableText/EditableText', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
   return {
@@ -30,11 +24,6 @@ vi.mock('../EditableText/EditableText', async () => {
   };
 });
 
-/** -------------------------
- *  Mock LabelsPopover
- *  - renders only if open=true
- *  - exposes buttons to call onToggle/onClose
- *  ------------------------- */
 vi.mock('../LabelsPopover/LabelsPopover', () => ({
   default: ({ open, onToggle }: any) => {
     if (!open) return null;
@@ -48,9 +37,6 @@ vi.mock('../LabelsPopover/LabelsPopover', () => ({
   },
 }));
 
-/** -------------------------
- *  requestAnimationFrame mock
- *  ------------------------- */
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     cb(0);
