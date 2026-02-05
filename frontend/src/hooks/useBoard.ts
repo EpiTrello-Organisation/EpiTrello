@@ -27,8 +27,6 @@ export function useBoard(boardId?: string) {
     await apiFetch(`/api/boards/${encodeURIComponent(id)}`, { method: 'DELETE' });
   }
 
-  const api = { getBoard, updateBoard, removeBoard };
-
   useEffect(() => {
     let cancelled = false;
 
@@ -37,7 +35,7 @@ export function useBoard(boardId?: string) {
 
       setLoadingBoard(true);
       try {
-        const data = await api.getBoard(boardId);
+        const data = await getBoard(boardId);
         if (!cancelled) setBoard(data);
       } catch {
         if (!cancelled) setBoard(null);
@@ -51,6 +49,8 @@ export function useBoard(boardId?: string) {
       cancelled = true;
     };
   }, [boardId]);
+
+  const api = { getBoard, updateBoard, removeBoard };
 
   async function renameBoard(nextTitle: string) {
     const title = nextTitle.trim();

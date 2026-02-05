@@ -69,7 +69,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     return () => {
       cancelled = true;
     };
-  }, [boardId, listIdsKey]);
+  }, [boardId, lists, listIdsKey]);
 
   async function addCard(listId: string, titleRaw: string) {
     const title = titleRaw.trim();
@@ -81,7 +81,9 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
         ...prev,
         [listId]: [...(prev[listId] ?? []), created],
       }));
-    } catch {}
+    } catch {
+      // intentionnal
+    }
   }
 
   async function renameCard(cardId: string, listId: string, nextTitle: string) {

@@ -49,7 +49,7 @@ export function useList(boardId?: string) {
 
       setLoadingLists(true);
       try {
-        const data = await api.getListsByBoard(boardId);
+        const data = await getListsByBoard(boardId);
         if (!cancelled) setLists(data);
       } catch {
         if (!cancelled) setLists([]);
@@ -71,7 +71,9 @@ export function useList(boardId?: string) {
     try {
       const created = await api.createList(boardId, { title });
       setLists((prev) => [...prev, created]);
-    } catch {}
+    } catch {
+      // intentionnal
+    }
   }
 
   async function renameList(listId: string, nextTitle: string) {
