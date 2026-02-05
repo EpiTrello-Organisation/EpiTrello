@@ -3,9 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import LabelsPopover, { type LabelItem } from './LabelsPopover';
 
 vi.mock('@heroicons/react/24/outline', () => ({
-  PencilSquareIcon: (props: any) => <svg data-testid="pencil" {...props} />,
   XMarkIcon: (props: any) => <svg data-testid="xmark" {...props} />,
-  MagnifyingGlassIcon: (props: any) => <svg data-testid="search" {...props} />,
 }));
 
 function firePointerDown(target: EventTarget) {
@@ -62,9 +60,10 @@ describe('components/LabelsPopover', () => {
     expect(screen.getByRole('dialog', { name: /labels/i })).toBeTruthy();
 
     expect(screen.getByRole('button', { name: /close labels/i })).toBeTruthy();
-    expect(screen.getByRole('textbox', { name: /search labels/i })).toBeTruthy();
 
-    expect(screen.getAllByText('Labels')).toHaveLength(2);
+    expect(screen.getAllByText('Labels')).toHaveLength(1);
+
+    expect(screen.queryByRole('textbox', { name: /search labels/i })).toBeNull();
   });
 
   it('close button calls onClose', () => {
@@ -101,29 +100,6 @@ describe('components/LabelsPopover', () => {
 
     expect(onToggle).toHaveBeenCalledTimes(1);
     expect(onToggle).toHaveBeenCalledWith('blue');
-  });
-
-  it('filters labels by query (trim + case-insensitive, includes match)', () => {
-    setup({ open: true });
-
-    const input = screen.getByRole('textbox', { name: /search labels/i });
-
-    fireEvent.change(input, { target: { value: '  RE  ' } });
-
-    expect(screen.getByRole('button', { name: /toggle green/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /toggle red/i })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /toggle blue/i })).toBeNull();
-  });
-
-  it('filters labels with a query that matches only one item', () => {
-    setup({ open: true });
-
-    const input = screen.getByRole('textbox', { name: /search labels/i });
-    fireEvent.change(input, { target: { value: 'blu' } });
-
-    expect(screen.queryByRole('button', { name: /toggle green/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /toggle red/i })).toBeNull();
-    expect(screen.getByRole('button', { name: /toggle blue/i })).toBeTruthy();
   });
 
   it('clicking outside anchor and popover closes (capture pointerdown)', () => {
