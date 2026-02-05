@@ -364,4 +364,58 @@ describe('components/BoardKanban', () => {
     expect(screen.getByTestId('alc-open')).toHaveTextContent('false');
     expect(screen.getByTestId('alc-value')).toHaveTextContent('');
   });
+
+  it('onDragOver: moving a card over another card in different list uses findCardContainer + card index', async () => {
+    const { onMoveCardBetweenLists } = renderKanban({
+      cardsByListId: {
+        l1: [card({ id: 'c1', list_id: 'l1' })],
+        l2: [card({ id: 'c2', list_id: 'l2' }), card({ id: 'c3', list_id: 'l2' })],
+      },
+    });
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(dragEvent({ activeId: 'c1', overId: 'c2', activeType: 'card', fromListId: 'l1' }));
+    });
+
+    expect(onMoveCardBetweenLists).toHaveBeenCalledTimes(1);
+    expect(onMoveCardBetweenLists).toHaveBeenCalledWith('l1', 'l2', 'c1', 0);
+  });
+
+  it('onDragOver: dragging a card over a card in the same list does nothing', async () => {
+    const { onMoveCardBetweenLists } = renderKanban({
+      cardsByListId: {
+        l1: [card({ id: 'c1', list_id: 'l1' }), card({ id: 'c2', list_id: 'l1' })],
+        l2: [],
+      },
+    });
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(dragEvent({ activeId: 'c1', overId: 'c2', activeType: 'card', fromListId: 'l1' }));
+    });
+
+    expect(onMoveCardBetweenLists).not.toHaveBeenCalled();
+  });
+
+  it('DragStart: if active type is not card, it does not set overlay', async () => {
+    renderKanban({
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })] },
+      lists: [list('l1')],
+    });
+
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+
+    const { onDragStart } = getDndProps();
+
+    await act(async () => {
+      onDragStart({
+        active: { id: 'l1', data: { current: { type: 'list' } } },
+      } as any);
+    });
+
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+  });
 });
