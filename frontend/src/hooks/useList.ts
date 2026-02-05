@@ -3,6 +3,7 @@ import { apiFetch } from '@/api/fetcher';
 import type { ListModel } from '@/components/BoardList/BoardList';
 
 type ListPut = { title?: string; position?: number };
+type ListPost = { title: string };
 
 export function useList(boardId?: string) {
   const [lists, setLists] = useState<ListModel[]>([]);
