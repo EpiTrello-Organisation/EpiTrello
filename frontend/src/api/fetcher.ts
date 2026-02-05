@@ -1,10 +1,7 @@
 import { getAccessToken, logout } from '@/auth/token';
 import { API_BASE_URL } from '@/config/api';
 
-export async function apiFetch(
-  path: string,
-  options: RequestInit = {}
-) {
+export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = getAccessToken();
 
   const res = await fetch(`${API_BASE_URL}${path}`, {

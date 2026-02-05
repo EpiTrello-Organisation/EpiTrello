@@ -91,23 +91,23 @@ describe('components/TopBar', () => {
     expect(screen.queryByRole('button', { name: /match system/i })).toBeNull();
   });
 
-//   it('clicking outside closes menu and theme when menuOpen is true', () => {
-//     const { container } = renderTopBar();
+  //   it('clicking outside closes menu and theme when menuOpen is true', () => {
+  //     const { container } = renderTopBar();
 
-//     fireEvent.click(screen.getByRole('button', { name: /profile/i }));
-//     fireEvent.click(screen.getByRole('button', { name: /^theme$/i }));
-//     expect(screen.getByRole('button', { name: /match system/i })).toBeTruthy();
+  //     fireEvent.click(screen.getByRole('button', { name: /profile/i }));
+  //     fireEvent.click(screen.getByRole('button', { name: /^theme$/i }));
+  //     expect(screen.getByRole('button', { name: /match system/i })).toBeTruthy();
 
-//     const outside = document.createElement('div');
-//     document.body.appendChild(outside);
+  //     const outside = document.createElement('div');
+  //     document.body.appendChild(outside);
 
-//     firePointerDown(outside);
+  //     firePointerDown(outside);
 
-//     expect(screen.queryByRole('button', { name: /^theme$/i })).toBeNull();
-//     expect(screen.queryByRole('button', { name: /match system/i })).toBeNull();
+  //     expect(screen.queryByRole('button', { name: /^theme$/i })).toBeNull();
+  //     expect(screen.queryByRole('button', { name: /match system/i })).toBeNull();
 
-//     expect(container.querySelector('header')).toBeTruthy();
-//   });
+  //     expect(container.querySelector('header')).toBeTruthy();
+  //   });
 
   it('clicking inside wrapper does not close menu', () => {
     renderTopBar();

@@ -53,7 +53,7 @@ export default function SignUpPage() {
       } else {
         setError('Une erreur est survenue');
       }
-    } catch (err) {
+    } catch {
       setError('Une erreur est survenue');
     }
   }

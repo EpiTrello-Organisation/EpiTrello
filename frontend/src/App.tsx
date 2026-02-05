@@ -51,11 +51,7 @@ export default function App() {
       <Route
         path="*"
         element={
-          isAuthenticated() ? (
-            <Navigate to="/boards" replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          isAuthenticated() ? <Navigate to="/boards" replace /> : <Navigate to="/login" replace />
         }
       />
     </Routes>

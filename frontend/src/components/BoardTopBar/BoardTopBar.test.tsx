@@ -71,19 +71,19 @@ describe('components/BoardTopBar', () => {
     expect(screen.queryByRole('button', { name: /delete board/i })).toBeNull();
   });
 
-//   it('clicking outside closes the menu when open', () => {
-//     renderComp();
+  //   it('clicking outside closes the menu when open', () => {
+  //     renderComp();
 
-//     fireEvent.click(screen.getByRole('button', { name: /board menu/i }));
-//     expect(screen.getByRole('button', { name: /delete board/i })).toBeTruthy();
+  //     fireEvent.click(screen.getByRole('button', { name: /board menu/i }));
+  //     expect(screen.getByRole('button', { name: /delete board/i })).toBeTruthy();
 
-//     const outside = document.createElement('div');
-//     document.body.appendChild(outside);
+  //     const outside = document.createElement('div');
+  //     document.body.appendChild(outside);
 
-//     firePointerDown(outside);
+  //     firePointerDown(outside);
 
-//     expect(screen.queryByRole('button', { name: /delete board/i })).toBeNull();
-//   });
+  //     expect(screen.queryByRole('button', { name: /delete board/i })).toBeNull();
+  //   });
 
   it('clicking inside the menu wrapper does not close the menu', () => {
     const { container } = renderComp();
