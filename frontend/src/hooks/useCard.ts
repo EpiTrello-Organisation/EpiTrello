@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch } from '@/api/fetcher';
+
 import type { CardModel } from '@/components/BoardCard/BoardCard';
 import type { ListModel } from '@/components/BoardList/BoardList';
 
@@ -9,7 +10,16 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
   const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
   const [loadingCards, setLoadingCards] = useState(false);
 
-  const listIdsKey = useMemo(() => (lists ?? []).map((l) => l.id).join('|'), [lists]);
+  const listsRef = useRef<ListModel[] | undefined>(lists);
+
+  useEffect(() => {
+    listsRef.current = lists;
+  }, [lists]);
+
+  const listIdsKey = useMemo(
+    () => (Array.isArray(lists) ? lists.map((l) => l.id).join('|') : ''),
+    [lists],
+  );
 
   async function getCards(listId: string): Promise<CardModel[]> {
     const res = await apiFetch(`/api/cards/?list_id=${encodeURIComponent(listId)}`);
@@ -48,16 +58,23 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     let cancelled = false;
 
     async function load() {
-      if (!boardId) return;
+      if (!boardId) {
+        if (!cancelled) setLoadingCards(false);
+        return;
+      }
 
-      const safeLists = Array.isArray(lists) ? lists : [];
+      const safeLists: ListModel[] = Array.isArray(listsRef.current) ? listsRef.current : [];
+
       setLoadingCards(true);
 
       try {
         const entries = await Promise.all(
           safeLists.map(async (list) => [list.id, await getCards(list.id)] as const),
         );
-        if (!cancelled) setCardsByListId(Object.fromEntries(entries));
+
+        if (!cancelled) {
+          setCardsByListId(Object.fromEntries(entries));
+        }
       } catch {
         if (!cancelled) setCardsByListId({});
       } finally {
@@ -69,7 +86,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     return () => {
       cancelled = true;
     };
-  }, [boardId, lists, listIdsKey]);
+  }, [boardId, listIdsKey]);
 
   async function addCard(listId: string, titleRaw: string) {
     const title = titleRaw.trim();
@@ -82,7 +99,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
         [listId]: [...(prev[listId] ?? []), created],
       }));
     } catch {
-      // intentionnal
+      // intentionally ignored
     }
   }
 
@@ -122,7 +139,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
 
     setCardsByListId((prev) => ({
       ...prev,
-      [listId]: (prev[listId] ?? []).filter((c) => c.id !== cardId),
+      [listId]: prevList.filter((c) => c.id !== cardId),
     }));
 
     try {
@@ -171,9 +188,9 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     });
   }
 
-  async function persistCardPositions(nextCards: CardModel[]) {
+  async function persistCardPositions(cards: CardModel[]) {
     await Promise.all(
-      nextCards.map((c) =>
+      cards.map((c) =>
         updateCard(c.id, {
           title: c.title,
           description: c.description,
@@ -209,7 +226,9 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
 
     try {
       await persistCardPositions(nextTo);
-      if (fromListId !== toListId) await persistCardPositions(nextFrom);
+      if (fromListId !== toListId) {
+        await persistCardPositions(nextFrom);
+      }
     } catch {
       setCardsByListId(prevSnapshot);
     }
