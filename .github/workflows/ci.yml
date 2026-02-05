@@ -2,7 +2,7 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, master, develop]
+    branches: [main, master, dev]
   pull_request:
 
 concurrency:
