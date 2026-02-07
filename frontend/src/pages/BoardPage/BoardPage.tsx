@@ -36,13 +36,6 @@ export default function BoardPage() {
 
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
 
-  function updateCardLabels(cardId: string, listId: string, nextLabelIds: string[]) {
-    setSelectedCard((prev) =>
-      prev && prev.id === cardId ? { ...prev, labelIds: nextLabelIds } : prev,
-    );
-    cardActions.setCardLabelsLocal(cardId, listId, nextLabelIds);
-  }
-
   return (
     <div className={styles.page}>
       <TopBar />
@@ -72,7 +65,7 @@ export default function BoardPage() {
         onCommitCards={cardDnd.commitCardsMove}
       />
 
-      {selectedCard ? (
+      {selectedCard && (
         <CardModal
           card={selectedCard}
           onClose={() => setSelectedCard(null)}
@@ -83,11 +76,15 @@ export default function BoardPage() {
             await cardActions.deleteCard(selectedCard.id, selectedCard.list_id);
             setSelectedCard(null);
           }}
-          onUpdateLabels={(nextLabelIds) => {
-            updateCardLabels(selectedCard.id, selectedCard.list_id, nextLabelIds);
-          }}
+          onUpdateLabels={(nextLabelIds) =>
+            cardActions.updateCardLabels(
+              selectedCard.id,
+              selectedCard.list_id,
+              nextLabelIds,
+            )
+          }
         />
-      ) : null}
+      )}
     </div>
   );
 }

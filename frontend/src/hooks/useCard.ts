@@ -4,7 +4,9 @@ import { apiFetch } from '@/api/fetcher';
 import type { CardModel } from '@/components/BoardCard/BoardCard';
 import type { ListModel } from '@/components/BoardList/BoardList';
 
-type CardPut = Pick<CardModel, 'title' | 'description' | 'position' | 'list_id'>;
+type CardPut = Partial<
+  Pick<CardModel, 'title' | 'description' | 'position' | 'list_id' | 'label_ids'>
+>;
 
 export function useCard(boardId?: string, lists?: ListModel[]) {
   const [cardsByListId, setCardsByListId] = useState<Record<string, CardModel[]>>({});
@@ -99,7 +101,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
         [listId]: [...(prev[listId] ?? []), created],
       }));
     } catch {
-      // intentionally ignored
+      // intentional
     }
   }
 
@@ -152,11 +154,11 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     }
   }
 
-  function setCardLabelsLocal(cardId: string, listId: string, nextLabelIds: string[]) {
+  function setCardLabelsLocal(cardId: string, listId: string, nextLabelIds: number[]) {
     setCardsByListId((prev) => ({
       ...prev,
       [listId]: (prev[listId] ?? []).map((c) =>
-        c.id === cardId ? { ...c, labelIds: nextLabelIds } : c,
+        c.id === cardId ? { ...c, label_ids: nextLabelIds } : c,
       ),
     }));
   }
@@ -201,6 +203,18 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     );
   }
 
+  async function updateCardLabels(cardId: string, listId: string, nextLabelIds: number[]) {
+    const prev = cardsByListId[listId]?.find((c) => c.id === cardId)?.label_ids ?? [];
+
+    setCardLabelsLocal(cardId, listId, nextLabelIds);
+
+    try {
+      await updateCard(cardId, { label_ids: nextLabelIds });
+    } catch {
+      setCardLabelsLocal(cardId, listId, prev);
+    }
+  }
+
   async function reorderCards(listId: string, nextCards: CardModel[]) {
     setCardsByListId((prev) => ({
       ...prev,
@@ -238,7 +252,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     cardsByListId,
     loadingCards,
     api: { getCards, createCard, updateCard, removeCard },
-    actions: { addCard, renameCard, deleteCard, setCardLabelsLocal },
+    actions: { addCard, renameCard, deleteCard, setCardLabelsLocal, updateCardLabels },
     dnd: { moveCardBetweenListsPreview, commitCardsMove, reorderCards },
   };
 }

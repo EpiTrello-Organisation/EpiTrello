@@ -28,7 +28,7 @@ export default function CardModal({
   onRename: (nextTitle: string) => void;
   onDeleteCard: () => void;
 
-  onUpdateLabels: (nextLabelIds: string[]) => void;
+  onUpdateLabels: (nextLabelIds: number[]) => void;
 }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
@@ -38,18 +38,23 @@ export default function CardModal({
   const [labelsOpen, setLabelsOpen] = useState(false);
   const labelsAnchorRef = useRef<HTMLDivElement | null>(null);
 
-  const onIds = new Set(card.labelIds ?? []);
-  const activeLabels = LABELS.filter((l) => onIds.has(l.id)); // ordre garanti par LABELS
+  const [draftLabelIds, setDraftLabelIds] = useState<number[]>([]);
 
-  const selectedSet = useMemo(() => new Set(card.labelIds ?? []), [card.labelIds]);
+  const popoverLabels = useMemo(() => LABELS.map((l, idx) => ({ id: idx, color: l.color })), []);
 
-  function toggleLabel(labelId: string) {
-    const next = new Set(selectedSet);
-    if (next.has(labelId)) next.delete(labelId);
-    else next.add(labelId);
+  const activeLabels = draftLabelIds
+    .filter((id) => id >= 0 && id < LABELS.length)
+    .map((id) => ({ id, color: LABELS[id].color }));
 
-    onUpdateLabels(Array.from(next));
+  function toggleLabel(labelId: number) {
+    setDraftLabelIds((prev) =>
+      prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId],
+    );
   }
+
+  useEffect(() => {
+    setDraftLabelIds(card.label_ids ?? []);
+  }, [card.id, card.label_ids]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -92,6 +97,20 @@ export default function CardModal({
       setLabelsOpen(false);
     };
   }, []);
+
+  async function closeLabelsPopover() {
+    setLabelsOpen(false);
+
+    // évite les PUT inutiles
+    const prev = card.label_ids ?? [];
+    const next = draftLabelIds;
+
+    if (prev.length === next.length && prev.every((v, i) => v === next[i])) {
+      return;
+    }
+
+    onUpdateLabels(next);
+  }
 
   return (
     <div
@@ -176,9 +195,9 @@ export default function CardModal({
             <LabelsPopover
               open={labelsOpen}
               anchorRef={labelsAnchorRef}
-              onClose={() => setLabelsOpen(false)}
-              labels={LABELS}
-              selectedIds={card.labelIds ?? []}
+              onClose={closeLabelsPopover}
+              labels={popoverLabels}
+              selectedIds={draftLabelIds}
               onToggle={toggleLabel}
             />
           </div>

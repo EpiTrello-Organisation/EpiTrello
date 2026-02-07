@@ -4,7 +4,7 @@ import styles from './LabelsPopover.module.css';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 export type LabelItem = {
-  id: string;
+  id: number;
   color: string;
 };
 
@@ -21,14 +21,12 @@ export default function LabelsPopover({
   onClose: () => void;
 
   labels: LabelItem[];
-
-  selectedIds: string[];
-
-  onToggle: (id: string) => void;
+  selectedIds: number[];
+  onToggle: (id: number) => void;
 }) {
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const selectedSet = useMemo(() => new Set<number>(selectedIds ?? []), [selectedIds]);
 
   useEffect(() => {
     if (!open) return;
@@ -83,9 +81,9 @@ export default function LabelsPopover({
                 type="button"
                 className={styles.colorBtn}
                 style={{ background: l.color }}
-                title={l.id}
+                title={`Label ${l.id}`}
                 onClick={() => onToggle(l.id)}
-                aria-label={`Toggle ${l.id}`}
+                aria-label={`Toggle label ${l.id}`}
               />
             </div>
           );
