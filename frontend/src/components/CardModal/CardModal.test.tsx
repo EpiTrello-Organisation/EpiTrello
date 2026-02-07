@@ -1,15 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-// import { waitFor } from '@testing-library/react';
 import CardModal from './CardModal';
 import type { CardModel } from '../BoardCard/BoardCard';
 
 vi.mock('@/constants/labels', () => ({
-  LABELS: [
-    { id: 'green', color: '#00ff00' },
-    { id: 'red', color: '#ff0000' },
-    { id: 'blue', color: '#0000ff' },
-  ],
+  LABELS: [{ color: '#00ff00' }, { color: '#ff0000' }, { color: '#0000ff' }],
 }));
 
 vi.mock('../EditableText/EditableText', async () => {
@@ -25,12 +20,15 @@ vi.mock('../EditableText/EditableText', async () => {
 });
 
 vi.mock('../LabelsPopover/LabelsPopover', () => ({
-  default: ({ open, onToggle }: any) => {
+  default: ({ open, onToggle, onClose }: any) => {
     if (!open) return null;
     return (
       <div data-testid="LabelsPopover" role="dialog" aria-label="LabelsPopover">
-        <button type="button" onClick={() => onToggle('green')}>
-          TOGGLE_GREEN
+        <button type="button" onClick={() => onToggle(0)}>
+          TOGGLE_0
+        </button>
+        <button type="button" onClick={onClose}>
+          CLOSE_POPOVER
         </button>
       </div>
     );
@@ -57,8 +55,14 @@ function makeCard(partial: Partial<CardModel> = {}): CardModel {
     list_id: partial.list_id ?? 'l1',
     creator_id: partial.creator_id ?? 'u1',
     created_at: partial.created_at ?? new Date('2024-01-01T12:00:00.000Z').toISOString(),
-    labelIds: partial.labelIds,
-  } as any;
+    label_ids: partial.label_ids ?? [],
+  };
+}
+
+function getSwatchesCount() {
+  return Array.from(document.querySelectorAll('div[aria-hidden="true"]')).filter(
+    (el) => (el as HTMLDivElement).style?.background?.length,
+  ).length;
 }
 
 describe('components/CardModal', () => {
@@ -213,13 +217,10 @@ describe('components/CardModal', () => {
       />,
     );
 
-    // open menu
     fireEvent.click(screen.getByRole('button', { name: /card menu/i }));
     expect(screen.getByRole('button', { name: /delete card/i })).toBeTruthy();
 
-    // IMPORTANT: dispatch on a real Node so e.target is a Node
     fireEvent.pointerDown(document.body);
-
     expect(screen.queryByRole('button', { name: /delete card/i })).toBeNull();
   });
 
@@ -241,7 +242,6 @@ describe('components/CardModal', () => {
     fireEvent.click(del);
 
     expect(onDeleteCard).toHaveBeenCalledTimes(1);
-    // menu should be closed
     expect(screen.queryByRole('button', { name: /delete card/i })).toBeNull();
   });
 
@@ -265,74 +265,10 @@ describe('components/CardModal', () => {
     expect(screen.queryByTestId('LabelsPopover')).toBeNull();
   });
 
-  //   it('LabelsPopover onClose closes it', () => {
-  //     render(
-  //       <CardModal
-  //         card={makeCard()}
-  //         onClose={vi.fn()}
-  //         onRename={vi.fn()}
-  //         onDeleteCard={vi.fn()}
-  //         onUpdateLabels={vi.fn()}
-  //       />,
-  //     );
-
-  //     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
-  //     expect(screen.getByTestId('LabelsPopover')).toBeTruthy();
-
-  //     fireEvent.click(screen.getByRole('button', { name: 'POPOVER_CLOSE' }));
-  //     expect(screen.queryByTestId('LabelsPopover')).toBeNull();
-  //   });
-
-  //   it('toggleLabel adds/removes id and calls onUpdateLabels', async () => {
-  //     const onUpdateLabels = vi.fn();
-
-  //     const { rerender } = render(
-  //       <CardModal
-  //         card={makeCard({ labelIds: ['red'] })}
-  //         onClose={vi.fn()}
-  //         onRename={vi.fn()}
-  //         onDeleteCard={vi.fn()}
-  //         onUpdateLabels={onUpdateLabels}
-  //       />,
-  //     );
-
-  //     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
-
-  //     await waitFor(() => {
-  //       expect(screen.getByTestId('LabelsPopover')).toBeTruthy();
-  //     });
-
-  //     fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_GREEN' }));
-
-  //     const added = onUpdateLabels.mock.calls[0][0] as string[];
-  //     expect(new Set(added)).toEqual(new Set(['red', 'green']));
-
-  //     onUpdateLabels.mockClear();
-
-  //     rerender(
-  //       <CardModal
-  //         card={makeCard({ labelIds: ['red', 'green'] })}
-  //         onClose={vi.fn()}
-  //         onRename={vi.fn()}
-  //         onDeleteCard={vi.fn()}
-  //         onUpdateLabels={onUpdateLabels}
-  //       />,
-  //     );
-
-  //     fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
-
-  //     await waitFor(() => expect(screen.getByTestId('LabelsPopover')).toBeTruthy());
-
-  //     fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_GREEN' }));
-
-  //     const removed = onUpdateLabels.mock.calls[0][0] as string[];
-  //     expect(new Set(removed)).toEqual(new Set(['red']));
-  //   });
-
   it('renders labels swatches only when activeLabels exist', () => {
     const { unmount } = render(
       <CardModal
-        card={makeCard({ labelIds: [] })}
+        card={makeCard({ label_ids: [] })}
         onClose={vi.fn()}
         onRename={vi.fn()}
         onDeleteCard={vi.fn()}
@@ -340,19 +276,15 @@ describe('components/CardModal', () => {
       />,
     );
 
-    expect(screen.queryByText(/^labels$/i)).toBeTruthy(); // quick action
-    expect(screen.queryByText('Labels')).toBeTruthy(); // quick action button text
-    // category title "Labels" only appears if activeLabels.length > 0 (but quick action also includes Labels)
-    // So check for swatches via aria-hidden=true swatch divs
-    expect(screen.queryAllByLabelText(/labels/i).length).toBeGreaterThanOrEqual(0);
-    // Better: ensure no aria-hidden swatch divs exist when no labels
-    expect(document.querySelectorAll('[aria-hidden="true"]').length).toBeGreaterThan(0); // icons etc.
+    expect(screen.queryByText(/^labels$/i)).toBeTruthy();
+    expect(screen.queryByText('Labels')).toBeTruthy();
+    expect(getSwatchesCount()).toBe(0);
 
     unmount();
 
     render(
       <CardModal
-        card={makeCard({ labelIds: ['green', 'blue'] })}
+        card={makeCard({ label_ids: [0, 2] })}
         onClose={vi.fn()}
         onRename={vi.fn()}
         onDeleteCard={vi.fn()}
@@ -360,10 +292,81 @@ describe('components/CardModal', () => {
       />,
     );
 
-    // swatches are aria-hidden=true divs with style background set
-    const swatches = Array.from(document.querySelectorAll('div[aria-hidden="true"]')).filter(
-      (el) => (el as HTMLDivElement).style?.background?.length,
+    expect(getSwatchesCount()).toBeGreaterThanOrEqual(1);
+  });
+
+  it('ignores invalid label ids (out of bounds) when computing activeLabels', () => {
+    render(
+      <CardModal
+        card={makeCard({ label_ids: [-1, 999] })}
+        onClose={vi.fn()}
+        onRename={vi.fn()}
+        onDeleteCard={vi.fn()}
+        onUpdateLabels={vi.fn()}
+      />,
     );
-    expect(swatches.length).toBeGreaterThanOrEqual(1);
+
+    expect(getSwatchesCount()).toBe(0);
+  });
+
+  it('closeLabelsPopover does NOT call onUpdateLabels when labels did not change', () => {
+    const onUpdateLabels = vi.fn();
+
+    render(
+      <CardModal
+        card={makeCard({ label_ids: [1] })}
+        onClose={vi.fn()}
+        onRename={vi.fn()}
+        onDeleteCard={vi.fn()}
+        onUpdateLabels={onUpdateLabels}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'CLOSE_POPOVER' }));
+
+    expect(onUpdateLabels).not.toHaveBeenCalled();
+  });
+
+  it('closeLabelsPopover calls onUpdateLabels when labels changed (add case)', () => {
+    const onUpdateLabels = vi.fn();
+
+    render(
+      <CardModal
+        card={makeCard({ label_ids: [] })}
+        onClose={vi.fn()}
+        onRename={vi.fn()}
+        onDeleteCard={vi.fn()}
+        onUpdateLabels={onUpdateLabels}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_0' }));
+    fireEvent.click(screen.getByRole('button', { name: 'CLOSE_POPOVER' }));
+
+    expect(onUpdateLabels).toHaveBeenCalledTimes(1);
+    expect(onUpdateLabels).toHaveBeenCalledWith([0]);
+  });
+
+  it('toggleLabel removes label id when already present (remove case)', () => {
+    const onUpdateLabels = vi.fn();
+
+    render(
+      <CardModal
+        card={makeCard({ label_ids: [0] })}
+        onClose={vi.fn()}
+        onRename={vi.fn()}
+        onDeleteCard={vi.fn()}
+        onUpdateLabels={onUpdateLabels}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^labels$/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'TOGGLE_0' }));
+    fireEvent.click(screen.getByRole('button', { name: 'CLOSE_POPOVER' }));
+
+    expect(onUpdateLabels).toHaveBeenCalledTimes(1);
+    expect(onUpdateLabels).toHaveBeenCalledWith([]);
   });
 });

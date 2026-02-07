@@ -118,7 +118,7 @@ function card(partial: Partial<CardModel>): CardModel {
     list_id: partial.list_id ?? 'l1',
     creator_id: partial.creator_id ?? 'u',
     created_at: partial.created_at ?? new Date().toISOString(),
-    labelIds: partial.labelIds,
+    label_ids: partial.label_ids ?? [],
   } as any;
 }
 

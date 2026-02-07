@@ -43,7 +43,7 @@ function card(partial: Partial<CardModel>): CardModel {
     list_id: partial.list_id ?? 'list-1',
     creator_id: partial.creator_id ?? 'u',
     created_at: partial.created_at ?? new Date().toISOString(),
-    labelIds: partial.labelIds,
+    label_ids: partial.label_ids ?? [],
   };
 }
 
@@ -306,18 +306,18 @@ describe('hooks/useCard', () => {
     expect(result.current.cardsByListId['list-1'][0].id).toBe('c1');
   });
 
-  it('setCardLabelsLocal updates labelIds', async () => {
-    const existing = card({ id: 'c1', title: 'A', list_id: 'list-1', labelIds: [] });
+  it('setCardLabelsLocal updates label_ids', async () => {
+    const existing = card({ id: 'c1', title: 'A', list_id: 'list-1', label_ids: [] });
 
     (apiFetch as any).mockResolvedValueOnce(makeResJson([existing]));
     const { result } = renderHook(() => useCard('b1', [L1]));
     await waitFor(() => expect(result.current.loadingCards).toBe(false));
 
     act(() => {
-      result.current.actions.setCardLabelsLocal('c1', 'list-1', ['green', 'red']);
+      result.current.actions.setCardLabelsLocal('c1', 'list-1', [0, 1]);
     });
 
-    expect(result.current.cardsByListId['list-1'][0].labelIds).toEqual(['green', 'red']);
+    expect(result.current.cardsByListId['list-1'][0].label_ids).toEqual([0, 1]);
   });
 
   it('moveCardBetweenListsPreview moves card and respects toIndex clamping', async () => {

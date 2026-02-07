@@ -37,6 +37,7 @@ const hooks = vi.hoisted(() => ({
   renameCard: vi.fn(),
   deleteCard: vi.fn(async () => {}),
   setCardLabelsLocal: vi.fn(),
+  updateCardLabels: vi.fn(),
   moveCardBetweenListsPreview: vi.fn(),
   commitCardsMove: vi.fn(),
   reorderCards: vi.fn(),
@@ -80,6 +81,7 @@ vi.mock('@/hooks/useCard', () => ({
       renameCard: hooks.renameCard,
       deleteCard: hooks.deleteCard,
       setCardLabelsLocal: hooks.setCardLabelsLocal,
+      updateCardLabels: hooks.updateCardLabels,
     },
     dnd: {
       moveCardBetweenListsPreview: hooks.moveCardBetweenListsPreview,
@@ -144,7 +146,7 @@ vi.mock('@/components/BoardKanban/BoardKanban', async () => {
                 list_id: 'l1',
                 creator_id: 'u',
                 created_at: new Date().toISOString(),
-                labelIds: ['red'],
+                label_ids: [1],
               }),
           },
           'OPEN_CARD',
@@ -166,14 +168,14 @@ vi.mock('@/components/CardModal/CardModal', async () => {
         React.createElement(
           'div',
           { 'data-testid': 'modal-labels' },
-          (props.card.labelIds ?? []).join(','),
+          (props.card.label_ids ?? []).join(','),
         ),
         React.createElement('button', { onClick: props.onClose }, 'CLOSE_MODAL'),
         React.createElement('button', { onClick: () => props.onRename(' New ') }, 'RENAME_CARD'),
         React.createElement('button', { onClick: props.onDeleteCard }, 'DELETE_CARD'),
         React.createElement(
           'button',
-          { onClick: () => props.onUpdateLabels(['green', 'blue']) },
+          { onClick: () => props.onUpdateLabels([0, 2]) },
           'UPDATE_LABELS',
         ),
       );
@@ -308,18 +310,16 @@ describe('pages/BoardPage', () => {
     expect(screen.queryByTestId('CardModal')).toBeNull();
   });
 
-  it('CardModal onUpdateLabels updates selectedCard + calls setCardLabelsLocal', () => {
+  it('CardModal onUpdateLabels calls updateCardLabels(selectedCard.id, selectedCard.list_id, nextLabelIds)', () => {
     renderAt('/boards/b1');
     fireEvent.click(screen.getByRole('button', { name: 'OPEN_CARD' }));
 
-    expect(screen.getByTestId('modal-labels')).toHaveTextContent('red');
+    expect(screen.getByTestId('modal-labels')).toHaveTextContent('1');
 
     fireEvent.click(screen.getByRole('button', { name: 'UPDATE_LABELS' }));
 
-    expect(hooks.setCardLabelsLocal).toHaveBeenCalledTimes(1);
-    expect(hooks.setCardLabelsLocal).toHaveBeenCalledWith('c1', 'l1', ['green', 'blue']);
-
-    expect(screen.getByTestId('modal-labels')).toHaveTextContent('green,blue');
+    expect(hooks.updateCardLabels).toHaveBeenCalledTimes(1);
+    expect(hooks.updateCardLabels).toHaveBeenCalledWith('c1', 'l1', [0, 2]);
   });
 
   it('wires list + card callbacks into BoardKanban props', () => {
