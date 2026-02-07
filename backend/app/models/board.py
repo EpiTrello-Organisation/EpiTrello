@@ -16,6 +16,11 @@ class Board(Base):
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    background_kind = Column(String, nullable=False, default="gradient")
+    background_value = Column(String, nullable=True)
+    background_thumb_url = Column(String, nullable=True)
+
+
     members = relationship(
         "BoardMember",
         back_populates="board",

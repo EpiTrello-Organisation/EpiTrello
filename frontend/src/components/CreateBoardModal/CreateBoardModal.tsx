@@ -5,10 +5,17 @@ type BackgroundOption =
   | { id: string; kind: 'image'; value: string }
   | { id: string; kind: 'gradient'; value: string };
 
+type CreateBoardPayload = {
+  title: string;
+  background_kind: 'gradient' | 'unsplash';
+  background_value: string;
+  background_thumb_url?: string | null;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
-  onCreate: (payload: { title: string }) => void;
+  onCreate: (payload: CreateBoardPayload) => void;
 };
 
 const BG_OPTIONS: BackgroundOption[] = [
@@ -16,25 +23,25 @@ const BG_OPTIONS: BackgroundOption[] = [
     id: 'img-1',
     kind: 'image',
     value:
-      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=900&q=60',
+      'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=2400&q=60',
   },
   {
     id: 'img-2',
     kind: 'image',
     value:
-      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=900&q=60',
+      'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=2400&q=60',
   },
   {
     id: 'img-3',
     kind: 'image',
     value:
-      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=60',
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&q=60',
   },
   {
     id: 'img-4',
     kind: 'image',
     value:
-      'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=900&q=60',
+      'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=2400&q=60',
   },
 
   { id: 'g-1', kind: 'gradient', value: 'linear-gradient(135deg, #e6f0ff, #cfe2ff)' },
@@ -50,15 +57,39 @@ function styleForBg(bg: BackgroundOption): React.CSSProperties {
   return { backgroundImage: bg.value };
 }
 
+const FALLBACK_BG: BackgroundOption = {
+  id: 'g-1',
+  kind: 'gradient',
+  value: 'linear-gradient(135deg, #e6f0ff, #cfe2ff)',
+};
+
 export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  const [bgId, setBgId] = useState<string>(BG_OPTIONS[0].id);
+  const safeOptions = useMemo<BackgroundOption[]>(
+    () => (BG_OPTIONS.length > 0 ? BG_OPTIONS : [FALLBACK_BG]),
+    [],
+  );
+
+  const imageOptions = useMemo(() => safeOptions.filter((b) => b.kind === 'image'), [safeOptions]);
+  const gradientOptions = useMemo(
+    () => safeOptions.filter((b) => b.kind === 'gradient'),
+    [safeOptions],
+  );
+
+  const initialBgId = useMemo(
+    () => imageOptions[0]?.id ?? gradientOptions[0]?.id ?? FALLBACK_BG.id,
+    [imageOptions, gradientOptions],
+  );
+
+  const [bgId, setBgId] = useState<string>(initialBgId);
   const [title, setTitle] = useState('');
   const [touched, setTouched] = useState(false);
-  const [visibility, setVisibility] = useState<'workspace' | 'private'>('workspace');
 
-  const selectedBg = useMemo(() => BG_OPTIONS.find((b) => b.id === bgId) ?? BG_OPTIONS[0], [bgId]);
+  const selectedBg = useMemo(
+    () => safeOptions.find((b) => b.id === bgId) ?? safeOptions[0] ?? FALLBACK_BG,
+    [bgId, safeOptions],
+  );
 
   const titleError = touched && title.trim().length === 0 ? 'Board title is required' : null;
   const canCreate = title.trim().length > 0;
@@ -78,12 +109,31 @@ export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
     if (!open) return;
     setTouched(false);
     setTitle('');
-    setVisibility('workspace');
-    setBgId(BG_OPTIONS[0].id);
-  }, [open]);
+    setBgId(initialBgId);
+  }, [open, initialBgId]);
 
   function handleOverlayMouseDown(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) onClose();
+  }
+
+  function buildPayload(): CreateBoardPayload {
+    const trimmedTitle = title.trim();
+
+    if (selectedBg.kind === 'gradient') {
+      return {
+        title: trimmedTitle,
+        background_kind: 'gradient',
+        background_value: selectedBg.id,
+        background_thumb_url: null,
+      };
+    }
+
+    return {
+      title: trimmedTitle,
+      background_kind: 'unsplash',
+      background_value: selectedBg.id,
+      background_thumb_url: selectedBg.value,
+    };
   }
 
   if (!open) return null;
@@ -127,35 +177,35 @@ export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
         <div className={styles.section}>
           <div className={styles.sectionTitle}>Background</div>
 
-          <div className={styles.bgGrid}>
-            {BG_OPTIONS.slice(0, 4).map((bg) => (
-              <button
-                key={bg.id}
-                type="button"
-                className={`${styles.bgTile} ${bgId === bg.id ? styles.bgTileActive : ''}`}
-                onClick={() => setBgId(bg.id)}
-                aria-label="Select background"
-                style={styleForBg(bg)}
-              />
-            ))}
-          </div>
+          {imageOptions.length > 0 && (
+            <div className={styles.bgGrid}>
+              {imageOptions.map((bg) => (
+                <button
+                  key={bg.id}
+                  type="button"
+                  className={`${styles.bgTile} ${bgId === bg.id ? styles.bgTileActive : ''}`}
+                  onClick={() => setBgId(bg.id)}
+                  aria-label="Select background"
+                  style={styleForBg(bg)}
+                />
+              ))}
+            </div>
+          )}
 
-          <div className={styles.bgGrid2}>
-            {BG_OPTIONS.slice(4, 10).map((bg) => (
-              <button
-                key={bg.id}
-                type="button"
-                className={`${styles.colorTile} ${bgId === bg.id ? styles.colorTileActive : ''}`}
-                onClick={() => setBgId(bg.id)}
-                aria-label="Select color"
-                style={styleForBg(bg)}
-              />
-            ))}
-
-            <button type="button" className={styles.moreTile} aria-label="More backgrounds">
-              …
-            </button>
-          </div>
+          {gradientOptions.length > 0 && (
+            <div className={styles.bgGrid2}>
+              {gradientOptions.map((bg) => (
+                <button
+                  key={bg.id}
+                  type="button"
+                  className={`${styles.colorTile} ${bgId === bg.id ? styles.colorTileActive : ''}`}
+                  onClick={() => setBgId(bg.id)}
+                  aria-label="Select color"
+                  style={styleForBg(bg)}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className={styles.section}>
@@ -171,26 +221,7 @@ export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
             autoFocus
           />
 
-          {titleError && (
-            <div className={styles.inlineError}>
-              <span className={styles.wave}>👋</span>
-              {titleError}
-            </div>
-          )}
-        </div>
-
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Visibility</div>
-
-          <select
-            className={styles.select}
-            value={visibility}
-            onChange={(e) => setVisibility(e.target.value as any)}
-          >
-            <option value="public">Public</option>
-            <option value="workspace">Workspace</option>
-            <option value="private">Private</option>
-          </select>
+          {titleError && <div className={styles.inlineError}>{titleError}</div>}
         </div>
 
         <div className={styles.actions}>
@@ -198,13 +229,9 @@ export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
             type="button"
             className={styles.primaryBtn}
             disabled={!canCreate}
-            onClick={() => onCreate({ title: title.trim() })}
+            onClick={() => onCreate(buildPayload())}
           >
             Create
-          </button>
-
-          <button type="button" className={styles.secondaryBtn} onClick={() => {}}>
-            Start with a template
           </button>
 
           <div className={styles.footerNote}>

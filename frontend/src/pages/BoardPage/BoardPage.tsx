@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import type { CardModel } from '@/components/BoardCard/BoardCard';
@@ -13,6 +13,25 @@ import { useCard } from '@/hooks/useCard';
 import { useSortableLists } from '@/hooks/useSortableLists';
 
 import styles from './BoardPage.module.css';
+
+function gradientCssForKey(key?: string | null): string | null {
+  switch (key) {
+    case 'g-1':
+      return 'linear-gradient(135deg, #e6f0ff, #cfe2ff)';
+    case 'g-2':
+      return 'linear-gradient(135deg, #1fb6ff, #2dd4bf)';
+    case 'g-3':
+      return 'linear-gradient(135deg, #0ea5e9, #2563eb)';
+    case 'g-4':
+      return 'linear-gradient(135deg, #334155, #0f172a)';
+    case 'g-5':
+      return 'linear-gradient(135deg, #6d28d9, #ec4899)';
+    case 'g-6':
+      return 'linear-gradient(135deg, #7b5cff, #f17ac6)';
+    default:
+      return null;
+  }
+}
 
 export default function BoardPage() {
   const { boardId } = useParams();
@@ -36,8 +55,24 @@ export default function BoardPage() {
 
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
 
+  const pageStyle = useMemo<React.CSSProperties | undefined>(() => {
+    if (!board) return undefined;
+
+    if (board.background_kind === 'unsplash') {
+      const url = board.background_thumb_url;
+      return url ? { backgroundImage: `url(${url})` } : undefined;
+    }
+
+    if (board.background_kind === 'gradient') {
+      const css = gradientCssForKey(board.background_value);
+      return css ? { backgroundImage: css } : undefined;
+    }
+
+    return undefined;
+  }, [board]);
+
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={pageStyle}>
       <TopBar />
 
       <BoardTopBar
@@ -77,11 +112,7 @@ export default function BoardPage() {
             setSelectedCard(null);
           }}
           onUpdateLabels={(nextLabelIds) =>
-            cardActions.updateCardLabels(
-              selectedCard.id,
-              selectedCard.list_id,
-              nextLabelIds,
-            )
+            cardActions.updateCardLabels(selectedCard.id, selectedCard.list_id, nextLabelIds)
           }
         />
       )}
