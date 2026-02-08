@@ -281,3 +281,9 @@
   width: 48px;
   border-radius: 4px;
 }
+
+.description :global(a),
+.description :global(a:visited) {
+  color: var(--primary);
+  text-decoration: underline;
+}

@@ -1,8 +1,7 @@
 .wrapper {
-  border: 2px solid rgba(123, 169, 255, 0.9);
+  border: 2px solid var(--border-focus);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(22, 23, 26, 1);
 }
 
 .toolbar {
@@ -12,8 +11,8 @@
   gap: 6px;
   padding: 0 10px;
 
-  background: rgba(18, 19, 22, 1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--editor-bg);
+  border-bottom: 1px solid var(--border);
 }
 
 .group {
@@ -25,7 +24,6 @@
 .sep {
   width: 1px;
   height: 22px;
-  background: rgba(255, 255, 255, 0.1);
   margin: 0 6px;
 }
 
@@ -40,21 +38,20 @@
   gap: 6px;
 
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
 
   cursor: pointer;
   user-select: none;
 }
 
 .toolBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-hover);
 }
 
-.toolBtnActive {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.18);
+.toolBtn:active {
+  background: var(--surface-active);
 }
 
 .toolBtn:disabled {
@@ -72,12 +69,12 @@
 .editorArea {
   padding: 12px 14px;
   min-height: 190px;
-  background: rgba(22, 23, 26, 1);
+  background: var(--editor-area);
 }
 
 .editor :global(.tiptap) {
   outline: none;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text);
   line-height: 1.00;
   font-size: 14px;
 }
@@ -96,7 +93,7 @@
 }
 
 .editor :global(.tiptap a) {
-  color: rgba(160, 200, 255, 1);
+  color: var(--primary);
   text-decoration: underline;
 }
 
@@ -110,8 +107,8 @@
   justify-content: space-between;
 
   padding: 10px 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(18, 19, 22, 1);
+  border-top: 1px solid var(--border);
+  background: var(--editor-bg);
 }
 
 .actionsLeft {
@@ -125,16 +122,16 @@
   padding: 0 14px;
   border-radius: 10px;
 
-  border: 1px solid rgba(100, 160, 255, 0.9);
-  background: rgba(100, 160, 255, 0.9);
-  color: rgba(10, 12, 14, 1);
+  border: 1px solid transparent;
+  background: var(--primary);
+  color: var(--text-inverse);
 
   font-weight: 700;
   cursor: pointer;
 }
 
 .saveBtn:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.2);
 }
 
 .cancelBtn {
@@ -144,12 +141,12 @@
 
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text);
   cursor: pointer;
 }
 
 .cancelBtn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-hover);
 }
 
 .formatHelpBtn {
@@ -157,13 +154,13 @@
   padding: 0 12px;
   border-radius: 10px;
 
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
 
   cursor: pointer;
 }
 
 .formatHelpBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-hover);
 }
