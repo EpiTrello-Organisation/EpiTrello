@@ -64,6 +64,7 @@
 .icon {
   width: 18px;
   height: 18px;
+  color: var(--text);
 }
 
 .cardMenuWrapper {
@@ -167,7 +168,7 @@
   padding: 12px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--surface-raised);
+  background: transparent;
   cursor: pointer;
   flex: 1 1 auto;
   min-height: 0;

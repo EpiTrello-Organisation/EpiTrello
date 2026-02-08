@@ -10,9 +10,9 @@ import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/rea
 function IconDots() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
-      <circle cx="6" cy="12" r="1.7" fill="#fff" />
-      <circle cx="12" cy="12" r="1.7" fill="#fff" />
-      <circle cx="18" cy="12" r="1.7" fill="#fff" />
+      <circle cx="6" cy="12" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="18" cy="12" r="1.7" />
     </svg>
   );
 }

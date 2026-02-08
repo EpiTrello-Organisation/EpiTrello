@@ -87,6 +87,7 @@
 .icon {
   width: 20px;
   height: 20px;
+  color: var(--text);
 }
 
 .iconSmall {
@@ -201,6 +202,7 @@
 
   background: transparent;
   cursor: pointer;
+  stroke: var(--text);
 
   display: grid;
   place-items: center;
