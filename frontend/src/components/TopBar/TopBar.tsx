@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { logout } from '@/auth/token';
 import styles from './TopBar.module.css';
+import { UserIcon } from '@heroicons/react/24/outline';
 
 function TrelloMark() {
   return (
@@ -73,7 +74,7 @@ export default function TopBar() {
             setThemeOpen(false);
           }}
         >
-          <span className={styles.avatar} />
+          <UserIcon className={styles.avatarIcon} aria-hidden="true" />
         </button>
 
         {menuOpen && (

@@ -92,7 +92,8 @@
   border: none;
   padding: 0;
   line-height: 0;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   cursor: pointer;
   display: grid;
@@ -110,6 +111,12 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.avatarIcon {
+  width: 18px;
+  height: 18px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .profileWrapper {
