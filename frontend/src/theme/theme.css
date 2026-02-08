@@ -5,8 +5,8 @@
 :root[data-theme='dark'] {
   --bg: #1f1f21;
   --bg-subtle: #ffff;
-  --surface: #2a2a2d;
-  --surface-hover: #303034;
+  --surface: hsl(240, 3%, 17%);
+  --surface-hover: rgba(255, 255, 255, 0.06);
   --surface-active: #ffff;
   --surface-muted: #ffff;
   --surface-overlay: #ffff;
@@ -30,8 +30,10 @@
   --primary-active: #ffff;
   --primary-foreground: #ffff;
 
-  --secondary: #ffff;
-  --secondary-hover: #ffff;
+  --secondary: rgba(245, 245, 247, 1);
+  --secondary-hover: rgba(245, 245, 247, 0.50);;
   --secondary-active: #ffff;
   --secondary-foreground: #ffff;
+
+  --transparant: rgba(0, 0, 0, 0);
 }

@@ -58,7 +58,7 @@ export default function BoardTopBar({
               d="M4 6h16M7 12h10M10 18h4"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="2.0"
               strokeLinecap="round"
             />
           </svg>
@@ -75,14 +75,14 @@ export default function BoardTopBar({
               d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.8"
+              strokeWidth="2.0"
             />
-            <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" strokeWidth="2.0" />
           </svg>
         </button>
 
         <button type="button" className={styles.shareBtn} aria-label="Share">
-          Share
+          + Share
         </button>
 
         <div className={styles.boardMenuWrapper} ref={menuWrapperRef}>
