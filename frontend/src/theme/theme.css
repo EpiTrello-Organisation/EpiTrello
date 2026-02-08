@@ -13,7 +13,23 @@
 
   --text: #f5f5f7;
   --text-muted: #c9c9ce;
-  --text-subtle: #ffff;
-  --text-inverse: #ffff;
+  --text-subtle: rgba(255, 255, 255, 0.55);
+  --text-inverse: #1f1f21;
   --text-disabled: #ffff;
+
+  --border: rgba(255, 255, 255, 0.1);
+  --border-subtle: #ffff;
+  --border-strong: #ffff;
+  --divider: #ffff;
+  --border-focus: rgba(103, 157, 241, 0.8);
+
+  --primary: #679df1;
+  --primary-hover: #ffff;
+  --primary-active: #ffff;
+  --primary-foreground: #ffff;
+
+  --secondary: #ffff;
+  --secondary-hover: #ffff;
+  --secondary-active: #ffff;
+  --secondary-foreground: #ffff;
 }
