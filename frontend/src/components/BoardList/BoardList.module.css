@@ -209,8 +209,3 @@
 .addCardCancel:hover {
   background: var(--surface-hover);
 }
-
-.iconX {
-  width: 18px;
-  height: 18px;
-}
