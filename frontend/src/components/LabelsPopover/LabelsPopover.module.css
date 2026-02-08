@@ -4,8 +4,8 @@
   left: 0;
   width: 180px;
 
-  background: #2b2d31;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
 
@@ -35,13 +35,13 @@
   height: 24px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text);
   border-radius: 6px;
   cursor: pointer;
 }
 
 .close:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-hover);
 }
 
 .closeIcon {
@@ -82,13 +82,29 @@
   width: 14px;
   height: 14px;
   border-radius: 3px;
-  border: 1.5px solid rgba(255, 255, 255, 0.24);
+  border: 1.5px solid var(--border);
   background: transparent;
+
+  display: grid;
+  place-items: center;
 }
 
 .check input:checked + .customBox {
-  border-color: rgba(145, 180, 235, 0.85);
-  background: rgba(145, 180, 235, 0.2);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.check input:checked + .customBox::after {
+  content: '✓';
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  color: #000;
+}
+
+.check input:focus-visible + .customBox {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .colorBtn {
@@ -97,4 +113,13 @@
   border-radius: 6px;
   border: none;
   cursor: pointer;
+}
+
+.colorBtn:active {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.row:has(.check input:checked) .colorBtn {
+  outline-offset: 2px;
 }
