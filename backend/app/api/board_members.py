@@ -39,19 +39,7 @@ def add_member_by_email(
 
     return {"detail": "Member added"}
 
-# @router.get("/")
-# def list_members(
-#     board_id: UUID,
-#     db: Session = Depends(get_db),
-#     current_user = Depends(get_current_user),
-# ):
-#     members = (
-#         db.query(BoardMember)
-#         .filter(BoardMember.board_id == board_id)
-#         .all()
-#     )
 
-#     return members
 @router.get("/", response_model=list[BoardMemberOut])
 def list_members(
     board_id: UUID,
