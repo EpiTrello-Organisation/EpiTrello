@@ -5,9 +5,6 @@ import BoardsPage from './BoardsPage';
 
 import type { BoardModel } from '@/hooks/useBoards';
 
-/** -------------------------
- *  useNavigate mock
- *  ------------------------- */
 const nav = vi.hoisted(() => ({
   navigate: vi.fn(),
 }));
@@ -20,18 +17,14 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-/** -------------------------
- *  Hooks mock: useBoards + getBoardBackgroundUrl
- *  ------------------------- */
 const hooks = vi.hoisted(() => ({
   boards: [] as BoardModel[],
   loading: false,
-  createBoard: vi.fn(async (payload: { title: string }) => ({
+  createBoard: vi.fn(async (payload: any) => ({
     id: 'new-id',
     title: payload.title,
   })),
-
-  getBoardBackgroundUrl: vi.fn((b: BoardModel) => b.backgroundUrl ?? b.background_url ?? null),
+  getBoardBackgroundStyle: vi.fn((_b: BoardModel) => undefined as React.CSSProperties | undefined),
 }));
 
 vi.mock('@/hooks/useBoards', () => ({
@@ -40,12 +33,9 @@ vi.mock('@/hooks/useBoards', () => ({
     loading: hooks.loading,
     createBoard: hooks.createBoard,
   }),
-  getBoardBackgroundUrl: (b: BoardModel) => hooks.getBoardBackgroundUrl(b),
+  getBoardBackgroundStyle: (b: BoardModel) => hooks.getBoardBackgroundStyle(b),
 }));
 
-/** -------------------------
- *  Children mocks
- *  ------------------------- */
 vi.mock('../../components/TopBar/TopBar', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
   return { default: () => React.createElement('div', { 'data-testid': 'TopBar' }, 'TopBar') };
@@ -73,7 +63,15 @@ vi.mock('@/components/CreateBoardModal/CreateBoardModal', async () => {
         React.createElement('button', { onClick: props.onClose }, 'CBM_CLOSE'),
         React.createElement(
           'button',
-          { onClick: () => props.onCreate({ title: '  New Board  ' }) },
+          {
+            onClick: () =>
+              props.onCreate({
+                title: '  New Board  ',
+                background_kind: 'unsplash',
+                background_value: 'img-1',
+                background_thumb_url: 'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
+              }),
+          },
           'CBM_CREATE',
         ),
       );
@@ -81,9 +79,6 @@ vi.mock('@/components/CreateBoardModal/CreateBoardModal', async () => {
   };
 });
 
-/** -------------------------
- *  Render helper
- *  ------------------------- */
 function renderPage() {
   return render(
     <MemoryRouter>
@@ -99,14 +94,13 @@ describe('pages/BoardsPage', () => {
 
     hooks.loading = false;
     hooks.boards = [];
-    hooks.createBoard = vi.fn(async (payload: { title: string }) => ({
+
+    hooks.createBoard = vi.fn(async (payload: any) => ({
       id: 'new-id',
       title: payload.title,
     }));
 
-    hooks.getBoardBackgroundUrl = vi.fn(
-      (b: BoardModel) => b.backgroundUrl ?? b.background_url ?? null,
-    );
+    hooks.getBoardBackgroundStyle = vi.fn((_b: BoardModel) => undefined);
 
     modal.lastProps = null;
   });
@@ -139,13 +133,16 @@ describe('pages/BoardsPage', () => {
     expect(nav.navigate).toHaveBeenCalledWith('/boards/b2');
   });
 
-  it('applies preview backgroundImage when getBoardBackgroundUrl returns a value', () => {
-    hooks.boards = [{ id: 'b1', title: 'Board 1', backgroundUrl: 'https://img.test/x.png' }] as any;
-    hooks.getBoardBackgroundUrl = vi.fn(() => 'https://img.test/x.png');
+  it('applies preview backgroundImage when getBoardBackgroundStyle returns a value', () => {
+    hooks.boards = [{ id: 'b1', title: 'Board 1' }] as any;
+
+    hooks.getBoardBackgroundStyle = vi.fn(() => ({
+      backgroundImage: 'url(https://img.test/x.png)',
+    }));
 
     renderPage();
 
-    expect(hooks.getBoardBackgroundUrl).toHaveBeenCalledTimes(1);
+    expect(hooks.getBoardBackgroundStyle).toHaveBeenCalledTimes(1);
 
     const btn = screen.getByRole('button', { name: /board 1/i });
     const preview = btn.querySelector('div') as HTMLDivElement;
@@ -175,7 +172,7 @@ describe('pages/BoardsPage', () => {
   });
 
   it('CreateBoardModal onCreate calls createBoard, closes modal and navigates to created board', async () => {
-    hooks.createBoard = vi.fn(async (payload: { title: string }) => ({
+    hooks.createBoard = vi.fn(async (payload: any) => ({
       id: 'created-123',
       title: payload.title,
     }));
@@ -191,7 +188,12 @@ describe('pages/BoardsPage', () => {
 
     expect(hooks.createBoard).toHaveBeenCalledTimes(1);
 
-    expect(hooks.createBoard).toHaveBeenCalledWith({ title: '  New Board  ' });
+    expect(hooks.createBoard).toHaveBeenCalledWith({
+      title: '  New Board  ',
+      background_kind: 'unsplash',
+      background_value: 'img-1',
+      background_thumb_url: 'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
+    });
 
     expect(screen.getByTestId('cbm-open')).toHaveTextContent('false');
 

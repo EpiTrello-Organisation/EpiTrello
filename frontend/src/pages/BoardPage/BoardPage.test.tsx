@@ -193,6 +193,12 @@ function renderAt(path: string) {
   );
 }
 
+function getPageEl(container: HTMLElement): HTMLDivElement {
+  const el = container.querySelector('div[class*="page"]') as HTMLDivElement | null;
+  expect(el).toBeTruthy();
+  return el!;
+}
+
 describe('pages/BoardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -227,8 +233,11 @@ describe('pages/BoardPage', () => {
 
   it('falls back to "Board" when board is null', () => {
     hooks.board = null as any;
-    renderAt('/boards/b1');
+    const { container } = renderAt('/boards/b1');
     expect(screen.getByTestId('btb-title')).toHaveTextContent('Board');
+
+    const page = getPageEl(container);
+    expect(page.style.backgroundImage).toBe('');
   });
 
   it('computes loading as OR of loadingBoard/loadingLists/loadingCards', () => {
@@ -338,5 +347,78 @@ describe('pages/BoardPage', () => {
 
     expect(p.sensors).toBe(hooks.sensors);
     expect(p.onDragEnd).toBe(hooks.onDragEnd);
+  });
+
+  it('applies unsplash backgroundImage when board.background_kind="unsplash" and has thumb url', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'unsplash',
+      background_thumb_url: 'https://images.unsplash.com/photo-abc?auto=format&fit=crop&w=2400&q=60',
+      background_value: 'img-1',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toContain('url(');
+    expect(page.style.backgroundImage).toContain('images.unsplash.com');
+  });
+
+  it('does not apply unsplash backgroundImage when thumb url is missing', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'unsplash',
+      background_thumb_url: null,
+      background_value: 'img-1',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toBe('');
+  });
+
+  it('applies gradient backgroundImage when board.background_kind="gradient" and key is known', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'gradient',
+      background_value: 'g-2',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toContain('linear-gradient');
+  });
+
+  it('does not apply gradient backgroundImage when gradient key is unknown', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'gradient',
+      background_value: 'g-999',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toBe('');
+  });
+
+  it('does not apply backgroundImage when background_kind is unknown', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'weird',
+      background_value: 'x',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toBe('');
   });
 });
