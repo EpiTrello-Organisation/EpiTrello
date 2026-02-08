@@ -11,7 +11,7 @@
 
 .dialog {
   width: min(720px, 100%);
-  max-height: min(80vh, 900px);
+  max-height: min(90vh, 900px);
   border-radius: 12px;
   background: rgba(36, 37, 40, 1);
   color: #fff;
@@ -39,7 +39,7 @@
 .content {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: scroll;
 }
 
 .iconBtn {
@@ -148,6 +148,9 @@
 
 .body {
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .sectionTitle {
@@ -158,13 +161,38 @@
 }
 
 .description {
-  white-space: pre-wrap;
-  line-height: 1.35;
-  opacity: 0.95;
+  white-space: normal;
+  line-height: 1.45;
+  font-size: 14px;
+  padding: 12px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.description:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .empty {
   opacity: 0.65;
+  font-style: italic;
+}
+
+.description::-webkit-scrollbar {
+  width: 8px;
+}
+.description::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+}
+.description::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .meta {

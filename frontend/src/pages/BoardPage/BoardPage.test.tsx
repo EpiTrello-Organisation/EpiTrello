@@ -35,6 +35,7 @@ const hooks = vi.hoisted(() => ({
   loadingCards: false,
   addCard: vi.fn(),
   renameCard: vi.fn(),
+  editDescription: vi.fn(),
   deleteCard: vi.fn(async () => {}),
   setCardLabelsLocal: vi.fn(),
   updateCardLabels: vi.fn(),
@@ -79,6 +80,7 @@ vi.mock('@/hooks/useCard', () => ({
     actions: {
       addCard: hooks.addCard,
       renameCard: hooks.renameCard,
+      editDescription: hooks.editDescription,
       deleteCard: hooks.deleteCard,
       setCardLabelsLocal: hooks.setCardLabelsLocal,
       updateCardLabels: hooks.updateCardLabels,
@@ -130,6 +132,9 @@ vi.mock('@/components/BoardKanban/BoardKanban', async () => {
   return {
     default: (props: any) => {
       children.lastKanbanProps = props;
+
+      const cardFromState = props.cardsByListId?.l1?.[0];
+
       return React.createElement(
         'div',
         { 'data-testid': 'BoardKanban' },
@@ -137,17 +142,7 @@ vi.mock('@/components/BoardKanban/BoardKanban', async () => {
         React.createElement(
           'button',
           {
-            onClick: () =>
-              props.onOpenCard({
-                id: 'c1',
-                title: 'Card 1',
-                description: null,
-                position: 0,
-                list_id: 'l1',
-                creator_id: 'u',
-                created_at: new Date().toISOString(),
-                label_ids: [1],
-              }),
+            onClick: () => props.onOpenCard(cardFromState),
           },
           'OPEN_CARD',
         ),
@@ -177,6 +172,11 @@ vi.mock('@/components/CardModal/CardModal', async () => {
           'button',
           { onClick: () => props.onUpdateLabels([0, 2]) },
           'UPDATE_LABELS',
+        ),
+        React.createElement(
+          'button',
+          { onClick: () => props.onEditDescription('<p>Hello</p>') },
+          'EDIT_DESC',
         ),
       );
     },
@@ -211,7 +211,20 @@ describe('pages/BoardPage', () => {
     hooks.deleteBoard = vi.fn(async () => true);
 
     hooks.lists = [{ id: 'l1', title: 'L1' }] as any;
-    hooks.cardsByListId = { l1: [] };
+    hooks.cardsByListId = {
+      l1: [
+        {
+          id: 'c1',
+          title: 'Card 1',
+          description: null,
+          position: 0,
+          list_id: 'l1',
+          creator_id: 'u',
+          created_at: new Date().toISOString(),
+          label_ids: [1],
+        },
+      ],
+    };
 
     children.lastBoardTopBarProps = null;
     children.lastKanbanProps = null;
@@ -354,7 +367,8 @@ describe('pages/BoardPage', () => {
       id: 'b1',
       title: 'My Board',
       background_kind: 'unsplash',
-      background_thumb_url: 'https://images.unsplash.com/photo-abc?auto=format&fit=crop&w=2400&q=60',
+      background_thumb_url:
+        'https://images.unsplash.com/photo-abc?auto=format&fit=crop&w=2400&q=60',
       background_value: 'img-1',
     } as any;
 
@@ -421,4 +435,50 @@ describe('pages/BoardPage', () => {
 
     expect(page.style.backgroundImage).toBe('');
   });
+
+  it('BoardTopBar onRename calls boardActions.renameBoard', () => {
+    renderAt('/boards/b1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'RENAME' }));
+
+    expect(hooks.renameBoard).toHaveBeenCalledTimes(1);
+    expect(hooks.renameBoard).toHaveBeenCalledWith('X');
+  });
+
+  it('CardModal onEditDescription calls cardActions.editDescription(selectedCard.id, selectedCard.list_id, nextDescription)', () => {
+    renderAt('/boards/b1');
+    fireEvent.click(screen.getByRole('button', { name: 'OPEN_CARD' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'EDIT_DESC' }));
+
+    expect(hooks.editDescription).toHaveBeenCalledTimes(1);
+    expect(hooks.editDescription).toHaveBeenCalledWith('c1', 'l1', '<p>Hello</p>');
+  });
+
+  it('does not open CardModal if selectedCardId is set but card is not found in cardsByListId', () => {
+    renderAt('/boards/b1');
+
+    act(() => {
+      children.lastKanbanProps.onOpenCard({ id: 'missing-card' });
+    });
+
+    expect(screen.queryByTestId('CardModal')).toBeNull();
+  });
+
+  it.each(['g-1', 'g-3', 'g-4', 'g-5', 'g-6'])(
+    'applies gradient backgroundImage for known key %s',
+    (key) => {
+      hooks.board = {
+        id: 'b1',
+        title: 'My Board',
+        background_kind: 'gradient',
+        background_value: key,
+      } as any;
+
+      const { container } = renderAt('/boards/b1');
+      const page = getPageEl(container);
+
+      expect(page.style.backgroundImage).toContain('linear-gradient');
+    },
+  );
 });

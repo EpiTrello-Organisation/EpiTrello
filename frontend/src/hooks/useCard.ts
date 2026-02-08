@@ -215,6 +215,31 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     }
   }
 
+  async function editDescription(cardId: string, listId: string, nextDescription: string) {
+    const card = (cardsByListId[listId] ?? []).find((c) => c.id === cardId);
+    if (!card) return;
+
+    const description = nextDescription.trim().length === 0 ? 'No description' : nextDescription;
+    const prevDescription = card.description;
+
+    setCardsByListId((prev) => ({
+      ...prev,
+      [listId]: (prev[listId] ?? []).map((c) => (c.id === cardId ? { ...c, description } : c)),
+    }));
+
+    try {
+      await updateCard(cardId, { description });
+    } catch {
+      // rollback
+      setCardsByListId((prev) => ({
+        ...prev,
+        [listId]: (prev[listId] ?? []).map((c) =>
+          c.id === cardId ? { ...c, description: prevDescription } : c,
+        ),
+      }));
+    }
+  }
+
   async function reorderCards(listId: string, nextCards: CardModel[]) {
     setCardsByListId((prev) => ({
       ...prev,
@@ -252,7 +277,7 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     cardsByListId,
     loadingCards,
     api: { getCards, createCard, updateCard, removeCard },
-    actions: { addCard, renameCard, deleteCard, setCardLabelsLocal, updateCardLabels },
+    actions: { addCard, renameCard, deleteCard, setCardLabelsLocal, updateCardLabels, editDescription },
     dnd: { moveCardBetweenListsPreview, commitCardsMove, reorderCards },
   };
 }

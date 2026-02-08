@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import type { CardModel } from '@/components/BoardCard/BoardCard';
 import CardModal from '@/components/CardModal/CardModal';
 import BoardTopBar from '@/components/BoardTopBar/BoardTopBar';
 import TopBar from '@/components/TopBar/TopBar';
@@ -53,7 +52,18 @@ export default function BoardPage() {
     onReorder: listDnd.reorderLists,
   });
 
-  const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  const selectedCard = useMemo(() => {
+    if (!selectedCardId) return null;
+
+    for (const cards of Object.values(cardsByListId)) {
+      const found = cards.find((c) => c.id === selectedCardId);
+      if (found) return found;
+    }
+
+    return null;
+  }, [selectedCardId, cardsByListId]);
 
   const pageStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (!board) return undefined;
@@ -93,7 +103,7 @@ export default function BoardPage() {
         onRenameList={listActions.renameList}
         onDeleteList={listActions.deleteList}
         onAddCard={cardActions.addCard}
-        onOpenCard={setSelectedCard}
+        onOpenCard={(card) => setSelectedCardId(card.id)}
         onAddList={listActions.addList}
         listsRowClassName={styles.listsRow}
         onMoveCardBetweenLists={cardDnd.moveCardBetweenListsPreview}
@@ -103,16 +113,19 @@ export default function BoardPage() {
       {selectedCard && (
         <CardModal
           card={selectedCard}
-          onClose={() => setSelectedCard(null)}
+          onClose={() => setSelectedCardId(null)}
           onRename={(nextTitle) =>
             cardActions.renameCard(selectedCard.id, selectedCard.list_id, nextTitle)
           }
           onDeleteCard={async () => {
             await cardActions.deleteCard(selectedCard.id, selectedCard.list_id);
-            setSelectedCard(null);
+            setSelectedCardId(null);
           }}
           onUpdateLabels={(nextLabelIds) =>
             cardActions.updateCardLabels(selectedCard.id, selectedCard.list_id, nextLabelIds)
+          }
+          onEditDescription={(nextDescription) =>
+            cardActions.editDescription(selectedCard.id, selectedCard.list_id, nextDescription)
           }
         />
       )}

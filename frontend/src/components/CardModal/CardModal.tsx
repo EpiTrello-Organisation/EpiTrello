@@ -4,6 +4,7 @@ import styles from './CardModal.module.css';
 import type { CardModel } from '../BoardCard/BoardCard';
 import EditableText from '../EditableText/EditableText';
 import LabelsPopover from '../LabelsPopover/LabelsPopover';
+import RichTextEditor from './RichTextEditor';
 import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 
 function IconDots() {
@@ -22,13 +23,14 @@ export default function CardModal({
   onRename,
   onDeleteCard,
   onUpdateLabels,
+  onEditDescription,
 }: {
   card: CardModel;
   onClose: () => void;
   onRename: (nextTitle: string) => void;
   onDeleteCard: () => void;
-
   onUpdateLabels: (nextLabelIds: number[]) => void;
+  onEditDescription: (nextDescription: string) => void;
 }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
@@ -39,6 +41,8 @@ export default function CardModal({
   const labelsAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const [draftLabelIds, setDraftLabelIds] = useState<number[]>([]);
+
+  const [editingDescription, setEditingDescription] = useState(false);
 
   const popoverLabels = useMemo(() => LABELS.map((l, idx) => ({ id: idx, color: l.color })), []);
 
@@ -58,11 +62,15 @@ export default function CardModal({
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        // If the rich editor is open, let it close itself via its Cancel/Escape behavior.
+        // Otherwise close the modal.
+        if (!editingDescription) onClose();
+      }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [onClose, editingDescription]);
 
   useEffect(() => {
     requestAnimationFrame(() => dialogRef.current?.focus());
@@ -238,10 +246,36 @@ export default function CardModal({
         <div className={styles.content}>
           <div className={styles.body}>
             <div className={styles.sectionTitle}>Description</div>
-            {card.description ? (
-              <div className={styles.description}>{card.description}</div>
+
+            {editingDescription ? (
+              <RichTextEditor
+                value={card.description ?? ''}
+                onSave={(html) => {
+                  const normalized = html.trim().length === 0 ? 'No description' : html;
+                  onEditDescription(normalized);
+                  setEditingDescription(false);
+                }}
+                onCancel={() => setEditingDescription(false)}
+              />
             ) : (
-              <div className={styles.empty}>No description</div>
+              <div
+                className={`${styles.description} ${
+                  !card.description || card.description.trim().length === 0 ? styles.empty : ''
+                }`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setEditingDescription(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') setEditingDescription(true);
+                }}
+                aria-label="Edit card description"
+              >
+                {card.description && card.description.trim().length > 0 ? (
+                  <div dangerouslySetInnerHTML={{ __html: card.description }} />
+                ) : (
+                  'No description'
+                )}
+              </div>
             )}
 
             <div className={styles.meta}>
