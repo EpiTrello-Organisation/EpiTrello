@@ -150,7 +150,7 @@ export default function CreateBoardModal({ open, onClose, onCreate }: Props) {
         <div className={styles.header}>
           <div className={styles.headerTitle}>Create board</div>
           <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
-            ×
+            x
           </button>
         </div>
 
