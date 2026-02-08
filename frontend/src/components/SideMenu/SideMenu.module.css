@@ -3,7 +3,7 @@
   min-width: 220px;
   max-width: 320px;
   padding: 18px 16px;
-  background: #1f1f21;
+  background: var(--bg);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -21,20 +21,20 @@
   align-items: center;
   gap: 14px;
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--text);
   background: transparent;
 }
 
 .item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--item-hover);
 }
 
 .active {
-  background: rgba(103, 157, 241, 0.22);
+  background: var(--item-active);
 }
 
 .active .label {
-  color: #679df1;
+  color: var(--primary);
 }
 
 .icon {
@@ -54,14 +54,14 @@
 .svg {
   width: 22px;
   height: 22px;
-  fill: rgba(255, 255, 255, 0.7);
+  fill: var(--text);
 }
 
 .svgInner {
-  fill: #1f1f21;
+  fill: var(--bg);
   opacity: 0.9;
 }
 
 .active .svg {
-  fill: #679df1;
+  fill: var(--primary);
 }

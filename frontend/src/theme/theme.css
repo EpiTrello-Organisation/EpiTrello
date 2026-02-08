@@ -10,6 +10,8 @@
   --surface-active: #ffff;
   --surface-muted: #ffff;
   --surface-overlay: #ffff;
+  --item-hover: rgba(103, 157, 241, 0.11);
+  --item-active: rgba(103, 157, 241, 0.22);
 
   --text: #f5f5f7;
   --text-muted: #c9c9ce;
