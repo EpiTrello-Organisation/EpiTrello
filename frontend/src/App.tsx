@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-import HomePage from './pages/Homepage/HomePage';
 import SignUpPage from './pages/SignUpPage/SignUpPage';
 import LogInPage from './pages/LogInPage/LogInPage';
 import BoardsPage from './pages/BoardsPage/BoardsPage';
@@ -15,7 +14,7 @@ export default function App() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<Navigate to="/boards" replace />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/login" element={<LogInPage />} />
 
