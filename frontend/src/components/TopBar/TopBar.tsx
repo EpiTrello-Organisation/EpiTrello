@@ -2,6 +2,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { logout } from '@/auth/token';
 import styles from './TopBar.module.css';
+import { UserIcon } from '@heroicons/react/24/outline';
+import { useTheme } from '@/theme/ThemeProvider';
 
 function TrelloMark() {
   return (
@@ -15,6 +17,7 @@ function TrelloMark() {
 
 export default function TopBar() {
   const navigate = useNavigate();
+  const { preference, setPreference } = useTheme();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
@@ -43,6 +46,12 @@ export default function TopBar() {
     window.addEventListener('pointerdown', onPointerDown);
     return () => window.removeEventListener('pointerdown', onPointerDown);
   }, [menuOpen]);
+
+  function pickTheme(next: 'light' | 'dark' | 'system') {
+    setPreference(next); // -> écrit dans localStorage + applique data-theme via ThemeProvider
+    setThemeOpen(false);
+    setMenuOpen(false);
+  }
 
   return (
     <header className={styles.bar}>
@@ -73,7 +82,7 @@ export default function TopBar() {
             setThemeOpen(false);
           }}
         >
-          <span className={styles.avatar} />
+          <UserIcon className={styles.avatarIcon} aria-hidden="true" />
         </button>
 
         {menuOpen && (
@@ -99,13 +108,28 @@ export default function TopBar() {
 
             {themeOpen && (
               <div className={styles.themeMenu} ref={themeRef}>
-                <button type="button" className={styles.menuItem}>
+                <button
+                  type="button"
+                  className={styles.menuItem}
+                  onClick={() => pickTheme('light')}
+                  aria-pressed={preference === 'light'}
+                >
                   Light
                 </button>
-                <button type="button" className={styles.menuItem}>
+                <button
+                  type="button"
+                  className={styles.menuItem}
+                  onClick={() => pickTheme('dark')}
+                  aria-pressed={preference === 'dark'}
+                >
                   Dark
                 </button>
-                <button type="button" className={styles.menuItem}>
+                <button
+                  type="button"
+                  className={styles.menuItem}
+                  onClick={() => pickTheme('system')}
+                  aria-pressed={preference === 'system'}
+                >
                   Match system
                 </button>
               </div>

@@ -32,6 +32,9 @@ def create_board(
     board = Board(
         title=board_in.title,
         owner_id=current_user.id,
+        background_kind=board_in.background_kind,
+        background_value=board_in.background_value,
+        background_thumb_url=board_in.background_thumb_url,
     )
     db.add(board)
     db.flush()
@@ -85,7 +88,15 @@ def update_board(
     if board.owner_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    board.title = board_in.title
+    if board_in.title is not None:
+        board.title = board_in.title
+    if board_in.background_kind is not None:
+        board.background_kind = board_in.background_kind
+    if board_in.background_value is not None:
+        board.background_value = board_in.background_value
+    if board_in.background_thumb_url is not None:
+        board.background_thumb_url = board_in.background_thumb_url
+
     db.commit()
     db.refresh(board)
     return board

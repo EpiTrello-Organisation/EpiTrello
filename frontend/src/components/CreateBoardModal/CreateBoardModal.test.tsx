@@ -87,15 +87,24 @@ describe('components/CreateBoardModal', () => {
     expect(screen.getByText(/board title is required/i)).toBeTruthy();
   });
 
-  it('clicking Create calls onCreate with trimmed title', () => {
+  it('clicking Create calls onCreate with trimmed title + background payload', () => {
     const { onCreate } = setup({ open: true });
 
     const input = screen.getByRole('textbox') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '  Hello  ' } });
 
     fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
+
     expect(onCreate).toHaveBeenCalledTimes(1);
-    expect(onCreate).toHaveBeenCalledWith({ title: 'Hello' });
+
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Hello',
+        background_kind: 'unsplash',
+        background_value: 'img-1',
+        background_thumb_url: expect.stringMatching(/^https:\/\/images\.unsplash\.com\//),
+      }),
+    );
   });
 
   it('resets state each time open becomes true (title cleared, error cleared)', () => {
@@ -125,14 +134,11 @@ describe('components/CreateBoardModal', () => {
     expect(createBtn.disabled).toBe(true);
   });
 
-  it('selecting a background updates the preview backgroundImage', () => {
+  it('selecting a gradient updates the preview backgroundImage', () => {
     setup({ open: true });
 
-    const previewMock = screen.getByText((_c, el) => {
-      return el?.className?.includes('previewMock') ?? false;
-    });
-
-    const preview = previewMock.parentElement as HTMLDivElement;
+    const dialog = screen.getByRole('dialog', { name: /create board/i });
+    const preview = dialog.querySelector('div[class*="preview_"]') as HTMLDivElement;
     expect(preview).toBeTruthy();
 
     const before = preview.style.backgroundImage;
@@ -145,13 +151,44 @@ describe('components/CreateBoardModal', () => {
     expect(after.length).toBeGreaterThan(0);
   });
 
-  it('visibility select changes value (smoke)', () => {
+  it('clicking Create after selecting a gradient sends gradient payload', () => {
+    const { onCreate } = setup({ open: true });
+
+    const colorButtons = screen.getAllByRole('button', { name: /select color/i });
+    fireEvent.click(colorButtons[0]);
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '  Grad  ' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
+
+    expect(onCreate).toHaveBeenCalledTimes(1);
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Grad',
+        background_kind: 'gradient',
+        background_value: 'g-1',
+        background_thumb_url: null,
+      }),
+    );
+  });
+
+  it('clicking an image background updates the preview backgroundImage', () => {
     setup({ open: true });
 
-    const select = screen.getByRole('combobox') as HTMLSelectElement;
-    expect(select.value).toBe('workspace');
+    const dialog = screen.getByRole('dialog', { name: /create board/i });
+    const preview = dialog.querySelector('div[class*="preview_"]') as HTMLDivElement;
+    expect(preview).toBeTruthy();
 
-    fireEvent.change(select, { target: { value: 'private' } });
-    expect(select.value).toBe('private');
+    const before = preview.style.backgroundImage;
+
+    const bgButtons = screen.getAllByRole('button', { name: /select background/i });
+    expect(bgButtons.length).toBeGreaterThan(1);
+
+    fireEvent.click(bgButtons[1]); // click img-2 (pas le défaut img-1)
+
+    const after = preview.style.backgroundImage;
+    expect(after).not.toBe(before);
+    expect(after).toMatch(/^url\(/);
   });
 });

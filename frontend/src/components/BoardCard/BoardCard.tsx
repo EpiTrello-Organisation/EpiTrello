@@ -9,12 +9,15 @@ export type CardModel = {
   list_id: string;
   creator_id: string;
   created_at: string;
-  labelIds?: string[]; // TODO: add to backend
+  label_ids: number[];
 };
 
 export default function BoardCard({ card, onOpen }: { card: CardModel; onOpen: () => void }) {
-  const onIds = new Set(card.labelIds ?? []);
-  const activeLabels = LABELS.filter((l) => onIds.has(l.id));
+  const onIds = new Set<number>(card.label_ids ?? []);
+
+  const activeLabels = LABELS.map((l, idx) => ({ id: idx, color: l.color })).filter((l) =>
+    onIds.has(l.id),
+  );
 
   return (
     <button

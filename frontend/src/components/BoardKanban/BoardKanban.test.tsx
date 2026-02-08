@@ -101,6 +101,11 @@ vi.mock('@/components/AddListComposer/AddListComposer', async () => {
         ),
         React.createElement('button', { type: 'button', onClick: props.onSubmit }, 'ALC_SUBMIT'),
         React.createElement('button', { type: 'button', onClick: props.onCancel }, 'ALC_CANCEL'),
+        React.createElement(
+          'button',
+          { type: 'button', onClick: () => props.onChange('     ') },
+          'ALC_SET_SPACES',
+        ),
       ),
   };
 });
@@ -118,7 +123,7 @@ function card(partial: Partial<CardModel>): CardModel {
     list_id: partial.list_id ?? 'l1',
     creator_id: partial.creator_id ?? 'u',
     created_at: partial.created_at ?? new Date().toISOString(),
-    labelIds: partial.labelIds,
+    label_ids: partial.label_ids ?? [],
   } as any;
 }
 
@@ -417,5 +422,75 @@ describe('components/BoardKanban', () => {
     });
 
     expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+  });
+
+  it('DragOverlay: dragStart with missing card id keeps overlay hidden (activeCard memo returns null)', async () => {
+    renderKanban({
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })] },
+      lists: [list('l1')],
+    });
+
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+
+    const { onDragStart } = getDndProps();
+
+    await act(async () => {
+      onDragStart({
+        active: { id: 'does-not-exist', data: { current: { type: 'card', listId: 'l1' } } },
+      } as any);
+    });
+
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+  });
+
+  it('onDragOver: overId not found in any list does nothing (findCardContainer returns null)', async () => {
+    const { onMoveCardBetweenLists } = renderKanban({
+      cardsByListId: {
+        l1: [card({ id: 'c1', list_id: 'l1' })],
+        l2: [card({ id: 'c2', list_id: 'l2' })],
+      },
+    });
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(
+        dragEvent({
+          activeId: 'c1',
+          overId: 'unknown-card-id',
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onMoveCardBetweenLists).not.toHaveBeenCalled();
+  });
+
+  it('AddListComposerBridge: submit with whitespace-only title does not call onAddList and does not reset', async () => {
+    const onAddList = vi.fn(async () => {});
+    renderKanban({ onAddList });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_OPEN' }));
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_SET_VALUE' }));
+    expect(screen.getByTestId('alc-value').textContent).toBe('  New List  ');
+  });
+
+  it('AddListComposerBridge: cancel closes and clears value', async () => {
+    const onAddList = vi.fn(async () => {});
+    renderKanban({ onAddList });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_OPEN' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_SET_VALUE' }));
+
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('true');
+    expect(screen.getByTestId('alc-value').textContent).toBe('  New List  ');
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_CANCEL' }));
+
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('false');
+    expect(screen.getByTestId('alc-value')).toHaveTextContent('');
   });
 });

@@ -35,8 +35,10 @@ const hooks = vi.hoisted(() => ({
   loadingCards: false,
   addCard: vi.fn(),
   renameCard: vi.fn(),
+  editDescription: vi.fn(),
   deleteCard: vi.fn(async () => {}),
   setCardLabelsLocal: vi.fn(),
+  updateCardLabels: vi.fn(),
   moveCardBetweenListsPreview: vi.fn(),
   commitCardsMove: vi.fn(),
   reorderCards: vi.fn(),
@@ -78,8 +80,10 @@ vi.mock('@/hooks/useCard', () => ({
     actions: {
       addCard: hooks.addCard,
       renameCard: hooks.renameCard,
+      editDescription: hooks.editDescription,
       deleteCard: hooks.deleteCard,
       setCardLabelsLocal: hooks.setCardLabelsLocal,
+      updateCardLabels: hooks.updateCardLabels,
     },
     dnd: {
       moveCardBetweenListsPreview: hooks.moveCardBetweenListsPreview,
@@ -128,6 +132,9 @@ vi.mock('@/components/BoardKanban/BoardKanban', async () => {
   return {
     default: (props: any) => {
       children.lastKanbanProps = props;
+
+      const cardFromState = props.cardsByListId?.l1?.[0];
+
       return React.createElement(
         'div',
         { 'data-testid': 'BoardKanban' },
@@ -135,17 +142,7 @@ vi.mock('@/components/BoardKanban/BoardKanban', async () => {
         React.createElement(
           'button',
           {
-            onClick: () =>
-              props.onOpenCard({
-                id: 'c1',
-                title: 'Card 1',
-                description: null,
-                position: 0,
-                list_id: 'l1',
-                creator_id: 'u',
-                created_at: new Date().toISOString(),
-                labelIds: ['red'],
-              }),
+            onClick: () => props.onOpenCard(cardFromState),
           },
           'OPEN_CARD',
         ),
@@ -166,15 +163,20 @@ vi.mock('@/components/CardModal/CardModal', async () => {
         React.createElement(
           'div',
           { 'data-testid': 'modal-labels' },
-          (props.card.labelIds ?? []).join(','),
+          (props.card.label_ids ?? []).join(','),
         ),
         React.createElement('button', { onClick: props.onClose }, 'CLOSE_MODAL'),
         React.createElement('button', { onClick: () => props.onRename(' New ') }, 'RENAME_CARD'),
         React.createElement('button', { onClick: props.onDeleteCard }, 'DELETE_CARD'),
         React.createElement(
           'button',
-          { onClick: () => props.onUpdateLabels(['green', 'blue']) },
+          { onClick: () => props.onUpdateLabels([0, 2]) },
           'UPDATE_LABELS',
+        ),
+        React.createElement(
+          'button',
+          { onClick: () => props.onEditDescription('<p>Hello</p>') },
+          'EDIT_DESC',
         ),
       );
     },
@@ -191,6 +193,12 @@ function renderAt(path: string) {
   );
 }
 
+function getPageEl(container: HTMLElement): HTMLDivElement {
+  const el = container.querySelector('div[class*="page"]') as HTMLDivElement | null;
+  expect(el).toBeTruthy();
+  return el!;
+}
+
 describe('pages/BoardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -203,7 +211,20 @@ describe('pages/BoardPage', () => {
     hooks.deleteBoard = vi.fn(async () => true);
 
     hooks.lists = [{ id: 'l1', title: 'L1' }] as any;
-    hooks.cardsByListId = { l1: [] };
+    hooks.cardsByListId = {
+      l1: [
+        {
+          id: 'c1',
+          title: 'Card 1',
+          description: null,
+          position: 0,
+          list_id: 'l1',
+          creator_id: 'u',
+          created_at: new Date().toISOString(),
+          label_ids: [1],
+        },
+      ],
+    };
 
     children.lastBoardTopBarProps = null;
     children.lastKanbanProps = null;
@@ -225,8 +246,11 @@ describe('pages/BoardPage', () => {
 
   it('falls back to "Board" when board is null', () => {
     hooks.board = null as any;
-    renderAt('/boards/b1');
+    const { container } = renderAt('/boards/b1');
     expect(screen.getByTestId('btb-title')).toHaveTextContent('Board');
+
+    const page = getPageEl(container);
+    expect(page.style.backgroundImage).toBe('');
   });
 
   it('computes loading as OR of loadingBoard/loadingLists/loadingCards', () => {
@@ -308,18 +332,16 @@ describe('pages/BoardPage', () => {
     expect(screen.queryByTestId('CardModal')).toBeNull();
   });
 
-  it('CardModal onUpdateLabels updates selectedCard + calls setCardLabelsLocal', () => {
+  it('CardModal onUpdateLabels calls updateCardLabels(selectedCard.id, selectedCard.list_id, nextLabelIds)', () => {
     renderAt('/boards/b1');
     fireEvent.click(screen.getByRole('button', { name: 'OPEN_CARD' }));
 
-    expect(screen.getByTestId('modal-labels')).toHaveTextContent('red');
+    expect(screen.getByTestId('modal-labels')).toHaveTextContent('1');
 
     fireEvent.click(screen.getByRole('button', { name: 'UPDATE_LABELS' }));
 
-    expect(hooks.setCardLabelsLocal).toHaveBeenCalledTimes(1);
-    expect(hooks.setCardLabelsLocal).toHaveBeenCalledWith('c1', 'l1', ['green', 'blue']);
-
-    expect(screen.getByTestId('modal-labels')).toHaveTextContent('green,blue');
+    expect(hooks.updateCardLabels).toHaveBeenCalledTimes(1);
+    expect(hooks.updateCardLabels).toHaveBeenCalledWith('c1', 'l1', [0, 2]);
   });
 
   it('wires list + card callbacks into BoardKanban props', () => {
@@ -339,4 +361,124 @@ describe('pages/BoardPage', () => {
     expect(p.sensors).toBe(hooks.sensors);
     expect(p.onDragEnd).toBe(hooks.onDragEnd);
   });
+
+  it('applies unsplash backgroundImage when board.background_kind="unsplash" and has thumb url', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'unsplash',
+      background_thumb_url:
+        'https://images.unsplash.com/photo-abc?auto=format&fit=crop&w=2400&q=60',
+      background_value: 'img-1',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toContain('url(');
+    expect(page.style.backgroundImage).toContain('images.unsplash.com');
+  });
+
+  it('does not apply unsplash backgroundImage when thumb url is missing', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'unsplash',
+      background_thumb_url: null,
+      background_value: 'img-1',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toBe('');
+  });
+
+  it('applies gradient backgroundImage when board.background_kind="gradient" and key is known', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'gradient',
+      background_value: 'g-2',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toContain('linear-gradient');
+  });
+
+  it('does not apply gradient backgroundImage when gradient key is unknown', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'gradient',
+      background_value: 'g-999',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toBe('');
+  });
+
+  it('does not apply backgroundImage when background_kind is unknown', () => {
+    hooks.board = {
+      id: 'b1',
+      title: 'My Board',
+      background_kind: 'weird',
+      background_value: 'x',
+    } as any;
+
+    const { container } = renderAt('/boards/b1');
+    const page = getPageEl(container);
+
+    expect(page.style.backgroundImage).toBe('');
+  });
+
+  it('BoardTopBar onRename calls boardActions.renameBoard', () => {
+    renderAt('/boards/b1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'RENAME' }));
+
+    expect(hooks.renameBoard).toHaveBeenCalledTimes(1);
+    expect(hooks.renameBoard).toHaveBeenCalledWith('X');
+  });
+
+  it('CardModal onEditDescription calls cardActions.editDescription(selectedCard.id, selectedCard.list_id, nextDescription)', () => {
+    renderAt('/boards/b1');
+    fireEvent.click(screen.getByRole('button', { name: 'OPEN_CARD' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'EDIT_DESC' }));
+
+    expect(hooks.editDescription).toHaveBeenCalledTimes(1);
+    expect(hooks.editDescription).toHaveBeenCalledWith('c1', 'l1', '<p>Hello</p>');
+  });
+
+  it('does not open CardModal if selectedCardId is set but card is not found in cardsByListId', () => {
+    renderAt('/boards/b1');
+
+    act(() => {
+      children.lastKanbanProps.onOpenCard({ id: 'missing-card' });
+    });
+
+    expect(screen.queryByTestId('CardModal')).toBeNull();
+  });
+
+  it.each(['g-1', 'g-3', 'g-4', 'g-5', 'g-6'])(
+    'applies gradient backgroundImage for known key %s',
+    (key) => {
+      hooks.board = {
+        id: 'b1',
+        title: 'My Board',
+        background_kind: 'gradient',
+        background_value: key,
+      } as any;
+
+      const { container } = renderAt('/boards/b1');
+      const page = getPageEl(container);
+
+      expect(page.style.backgroundImage).toContain('linear-gradient');
+    },
+  );
 });

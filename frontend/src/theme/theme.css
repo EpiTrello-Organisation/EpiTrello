@@ -1,0 +1,79 @@
+:root {
+  --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+
+:root[data-theme='light'] {
+  --bg: rgb(255, 255, 255);
+
+  --surface: rgba(255, 255, 255, 1);
+  --surface-hover: rgba(0, 0, 0, 0.04);
+  --surface-raised: rgba(0, 0, 0, 0.07);
+  --surface-raised-hover: rgba(0, 0, 0, 0.1);
+  --surface-active: rgba(0, 0, 0, 0.14);
+  --surface-disabled: rgba(0, 0, 0, 0.06);
+
+  --item-hover: rgba(103, 157, 241, 0.12);
+  --item-active: rgba(103, 157, 241, 0.2);
+
+  --text: rgba(20, 20, 23, 1);
+  --text-muted: rgba(78, 78, 88, 1);
+  --text-subtle: rgba(20, 20, 23, 0.6);
+  --text-inverse: rgba(255, 255, 255, 1);
+  --text-disabled: rgba(20, 20, 23, 0.35);
+
+  --border: rgba(20, 20, 23, 0.12);
+  --border-focus: rgba(103, 157, 241, 0.85);
+
+  --primary: rgb(0, 82, 204, 1);
+
+  --secondary: rgba(20, 20, 23, 1);
+  --secondary-hover: rgba(20, 20, 23, 0.55);
+
+  --invisible: rgba(0, 0, 0, 0);
+  --transparent: rgba(0, 0, 0, 0.08);
+  --transparent-strong: rgba(0, 0, 0, 0.16);
+  --backdrop: rgba(0, 0, 0, 0.55);
+
+  --editor-bg: rgba(250, 251, 252, 1);
+  --editor-area: rgba(242, 244, 247, 1);
+
+  --error: rgba(220, 38, 38, 1);
+}
+
+:root[data-theme='dark'] {
+  --bg: rgba(31, 31, 33, 1);
+
+  --surface: rgba(42, 42, 45, 1);
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-raised: rgba(255, 255, 255, 0.12);
+  --surface-raised-hover: rgba(255, 255, 255, 0.18);
+  --surface-active: rgba(255, 255, 255, 0.22);
+  --surface-disabled: rgba(255, 255, 255, 0.08);
+
+  --item-hover: rgba(103, 157, 241, 0.11);
+  --item-active: rgba(103, 157, 241, 0.22);
+
+  --text: rgba(245, 245, 247, 1);
+  --text-muted: rgba(201, 201, 206, 1);
+  --text-subtle: rgba(255, 255, 255, 0.55);
+  --text-inverse: rgba(31, 31, 33, 1);
+  --text-disabled: rgba(255, 255, 255, 0.35);
+
+  --border: rgba(255, 255, 255, 0.1);
+  --border-focus: rgba(103, 157, 241, 0.8);
+
+  --primary: rgba(103, 157, 241, 1);
+
+  --secondary: rgba(245, 245, 247, 1);
+  --secondary-hover: rgba(245, 245, 247, 0.5);
+
+  --invisible: rgba(0, 0, 0, 0);
+  --transparent: rgba(0, 0, 0, 0.25);
+  --transparent-strong: rgba(0, 0, 0, 0.5);
+  --backdrop: rgba(0, 0, 0, 0.85);
+
+  --editor-bg: rgba(18, 19, 22, 1);
+  --editor-area: rgba(22, 23, 26, 1);
+
+  --error: rgba(239, 68, 68, 1);
+}

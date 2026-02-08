@@ -4,14 +4,15 @@ import styles from './CardModal.module.css';
 import type { CardModel } from '../BoardCard/BoardCard';
 import EditableText from '../EditableText/EditableText';
 import LabelsPopover from '../LabelsPopover/LabelsPopover';
+import RichTextEditor from './RichTextEditor';
 import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
 
 function IconDots() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
-      <circle cx="6" cy="12" r="1.7" fill="#fff" />
-      <circle cx="12" cy="12" r="1.7" fill="#fff" />
-      <circle cx="18" cy="12" r="1.7" fill="#fff" />
+      <circle cx="6" cy="12" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="18" cy="12" r="1.7" />
     </svg>
   );
 }
@@ -22,13 +23,14 @@ export default function CardModal({
   onRename,
   onDeleteCard,
   onUpdateLabels,
+  onEditDescription,
 }: {
   card: CardModel;
   onClose: () => void;
   onRename: (nextTitle: string) => void;
   onDeleteCard: () => void;
-
-  onUpdateLabels: (nextLabelIds: string[]) => void;
+  onUpdateLabels: (nextLabelIds: number[]) => void;
+  onEditDescription: (nextDescription: string) => void;
 }) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
@@ -38,26 +40,37 @@ export default function CardModal({
   const [labelsOpen, setLabelsOpen] = useState(false);
   const labelsAnchorRef = useRef<HTMLDivElement | null>(null);
 
-  const onIds = new Set(card.labelIds ?? []);
-  const activeLabels = LABELS.filter((l) => onIds.has(l.id)); // ordre garanti par LABELS
+  const [draftLabelIds, setDraftLabelIds] = useState<number[]>([]);
 
-  const selectedSet = useMemo(() => new Set(card.labelIds ?? []), [card.labelIds]);
+  const [editingDescription, setEditingDescription] = useState(false);
 
-  function toggleLabel(labelId: string) {
-    const next = new Set(selectedSet);
-    if (next.has(labelId)) next.delete(labelId);
-    else next.add(labelId);
+  const popoverLabels = useMemo(() => LABELS.map((l, idx) => ({ id: idx, color: l.color })), []);
 
-    onUpdateLabels(Array.from(next));
+  const activeLabels = draftLabelIds
+    .filter((id) => id >= 0 && id < LABELS.length)
+    .map((id) => ({ id, color: LABELS[id].color }));
+
+  function toggleLabel(labelId: number) {
+    setDraftLabelIds((prev) =>
+      prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId],
+    );
   }
 
   useEffect(() => {
+    setDraftLabelIds(card.label_ids ?? []);
+  }, [card.id, card.label_ids]);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        // If the rich editor is open, let it close itself via its Cancel/Escape behavior.
+        // Otherwise close the modal.
+        if (!editingDescription) onClose();
+      }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [onClose, editingDescription]);
 
   useEffect(() => {
     requestAnimationFrame(() => dialogRef.current?.focus());
@@ -92,6 +105,20 @@ export default function CardModal({
       setLabelsOpen(false);
     };
   }, []);
+
+  async function closeLabelsPopover() {
+    setLabelsOpen(false);
+
+    // évite les PUT inutiles
+    const prev = card.label_ids ?? [];
+    const next = draftLabelIds;
+
+    if (prev.length === next.length && prev.every((v, i) => v === next[i])) {
+      return;
+    }
+
+    onUpdateLabels(next);
+  }
 
   return (
     <div
@@ -176,9 +203,9 @@ export default function CardModal({
             <LabelsPopover
               open={labelsOpen}
               anchorRef={labelsAnchorRef}
-              onClose={() => setLabelsOpen(false)}
-              labels={LABELS}
-              selectedIds={card.labelIds ?? []}
+              onClose={closeLabelsPopover}
+              labels={popoverLabels}
+              selectedIds={draftLabelIds}
               onToggle={toggleLabel}
             />
           </div>
@@ -219,10 +246,36 @@ export default function CardModal({
         <div className={styles.content}>
           <div className={styles.body}>
             <div className={styles.sectionTitle}>Description</div>
-            {card.description ? (
-              <div className={styles.description}>{card.description}</div>
+
+            {editingDescription ? (
+              <RichTextEditor
+                value={card.description ?? ''}
+                onSave={(html) => {
+                  const normalized = html.trim().length === 0 ? 'No description' : html;
+                  onEditDescription(normalized);
+                  setEditingDescription(false);
+                }}
+                onCancel={() => setEditingDescription(false)}
+              />
             ) : (
-              <div className={styles.empty}>No description</div>
+              <div
+                className={`${styles.description} ${
+                  !card.description || card.description.trim().length === 0 ? styles.empty : ''
+                }`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setEditingDescription(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') setEditingDescription(true);
+                }}
+                aria-label="Edit card description"
+              >
+                {card.description && card.description.trim().length > 0 ? (
+                  <div dangerouslySetInnerHTML={{ __html: card.description }} />
+                ) : (
+                  'No description'
+                )}
+              </div>
             )}
 
             <div className={styles.meta}>

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -19,6 +19,8 @@ class Card(Base):
 
     list_id = Column(UUID(as_uuid=True), ForeignKey("lists.id"), nullable=False)
     creator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+
+    label_ids = Column(ARRAY(Integer), nullable=False, default=list)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 

@@ -1,0 +1,166 @@
+.wrapper {
+  border: 2px solid var(--border-focus);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.toolbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+
+  background: var(--editor-bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sep {
+  width: 1px;
+  height: 22px;
+  margin: 0 6px;
+}
+
+.toolBtn {
+  height: 30px;
+  min-width: 30px;
+  padding: 0 8px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+
+  cursor: pointer;
+  user-select: none;
+}
+
+.toolBtn:hover {
+  background: var(--surface-hover);
+}
+
+.toolBtn:active {
+  background: var(--surface-active);
+}
+
+.toolBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.toolIcon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+  opacity: 0.92;
+}
+
+.editorArea {
+  padding: 12px 14px;
+  min-height: 190px;
+  background: var(--editor-area);
+}
+
+.editor :global(.tiptap) {
+  outline: none;
+  color: var(--text);
+  line-height: 1.00;
+  font-size: 14px;
+}
+
+.editor :global(.tiptap p) {
+  margin: 0 0 10px;
+}
+.editor :global(.tiptap p:last-child) {
+  margin-bottom: 0;
+}
+
+.editor :global(.tiptap ul),
+.editor :global(.tiptap ol) {
+  margin: 0 0 10px 18px;
+  padding: 0;
+}
+
+.editor :global(.tiptap a) {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.placeholder {
+  opacity: 0.65;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--editor-bg);
+}
+
+.actionsLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.saveBtn {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 10px;
+
+  border: 1px solid transparent;
+  background: var(--primary);
+  color: var(--text-inverse);
+
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.saveBtn:hover {
+  filter: brightness(1.2);
+}
+
+.cancelBtn {
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cancelBtn:hover {
+  background: var(--surface-hover);
+}
+
+.formatHelpBtn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+
+  cursor: pointer;
+}
+
+.formatHelpBtn:hover {
+  background: var(--surface-hover);
+}

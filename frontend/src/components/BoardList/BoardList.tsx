@@ -21,9 +21,9 @@ export type ListModel = {
 function IconDots() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
-      <circle cx="6" cy="12" r="1.7" fill="#fff" />
-      <circle cx="12" cy="12" r="1.7" fill="#fff" />
-      <circle cx="18" cy="12" r="1.7" fill="#fff" />
+      <circle cx="6" cy="12" r="1.7" />
+      <circle cx="12" cy="12" r="1.7" />
+      <circle cx="18" cy="12" r="1.7" />
     </svg>
   );
 }
@@ -54,7 +54,6 @@ function IconX() {
       <path
         d="M7 7l10 10M17 7L7 17"
         fill="none"
-        stroke="#fff"
         strokeWidth="1.4"
         strokeLinecap="round"
       />

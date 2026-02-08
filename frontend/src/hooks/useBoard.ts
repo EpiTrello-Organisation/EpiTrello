@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/api/fetcher';
 
+export type BoardBackgroundKind = 'gradient' | 'unsplash';
+
 export type BoardModel = {
   id: string;
   title: string;
+
+  background_kind?: BoardBackgroundKind | null;
+  background_value?: string | null;
+  background_thumb_url?: string | null;
 };
 
 export function useBoard(boardId?: string) {
@@ -15,7 +21,10 @@ export function useBoard(boardId?: string) {
     return (await res.json()) as BoardModel;
   }
 
-  async function updateBoard(id: string, payload: Pick<BoardModel, 'title'>): Promise<void> {
+  async function updateBoard(
+    id: string,
+    payload: Partial<Pick<BoardModel, 'title'>>,
+  ): Promise<void> {
     await apiFetch(`/api/boards/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

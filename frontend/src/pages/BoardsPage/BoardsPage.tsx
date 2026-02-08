@@ -6,7 +6,7 @@ import SideMenu from '../../components/SideMenu/SideMenu';
 import CreateBoardModal from '@/components/CreateBoardModal/CreateBoardModal';
 
 import styles from './BoardsPage.module.css';
-import { getBoardBackgroundUrl, useBoards } from '@/hooks/useBoards';
+import { getBoardBackgroundStyle, useBoards } from '@/hooks/useBoards';
 
 export default function BoardsPage() {
   const navigate = useNavigate();
@@ -15,7 +15,12 @@ export default function BoardsPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
 
-  async function handleCreateBoard(payload: { title: string }) {
+  async function handleCreateBoard(payload: {
+    title: string;
+    background_kind: 'gradient' | 'unsplash';
+    background_value: string;
+    background_thumb_url?: string | null;
+  }) {
     const created = await createBoard(payload);
     setCreateOpen(false);
     navigate(`/boards/${created.id}`);
@@ -30,7 +35,7 @@ export default function BoardsPage() {
         <main className={styles.main}>
           <div className={styles.grid} aria-busy={loading}>
             {boards.map((b) => {
-              const bg = getBoardBackgroundUrl(b);
+              const style = getBoardBackgroundStyle(b);
 
               return (
                 <button
@@ -39,10 +44,7 @@ export default function BoardsPage() {
                   className={styles.card}
                   onClick={() => navigate(`/boards/${b.id}`)}
                 >
-                  <div
-                    className={styles.preview}
-                    style={bg ? { backgroundImage: `url(${bg})` } : undefined}
-                  />
+                  <div className={styles.preview} style={style} />
                   <div className={styles.titleBar}>
                     <span className={styles.title}>{b.title}</span>
                   </div>
@@ -52,7 +54,7 @@ export default function BoardsPage() {
 
             <button
               type="button"
-              className={`${styles.card} ${styles.createCard}`}
+              className={`${styles.card} ${styles.createBoard}`}
               onClick={() => setCreateOpen(true)}
               aria-label="Create new board"
             >
