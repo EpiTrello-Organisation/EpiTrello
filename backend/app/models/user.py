@@ -19,3 +19,8 @@ class User(Base):
     owned_boards = relationship("Board", back_populates="owner")
     boards = relationship("BoardMember", back_populates="user")
 
+    assigned_cards = relationship(
+        "CardMember",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )

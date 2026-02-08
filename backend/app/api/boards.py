@@ -18,7 +18,8 @@ def list_boards(
 ):
     return (
         db.query(Board)
-        .filter(Board.owner_id == current_user.id)
+        .join(BoardMember, BoardMember.board_id == Board.id)
+        .filter(BoardMember.user_id == current_user.id)
         .all()
     )
 

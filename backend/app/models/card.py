@@ -24,3 +24,9 @@ class Card(Base):
 
     list = relationship("List", back_populates="cards")
     creator = relationship("User")
+
+    members = relationship(
+        "CardMember",
+        back_populates="card",
+        cascade="all, delete-orphan",
+    )
