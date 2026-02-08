@@ -54,7 +54,7 @@ export default function BoardsPage() {
 
             <button
               type="button"
-              className={`${styles.card} ${styles.createCard}`}
+              className={`${styles.card} ${styles.createBoard}`}
               onClick={() => setCreateOpen(true)}
               aria-label="Create new board"
             >
