@@ -5,7 +5,8 @@
 :root[data-theme='dark'] {
   --bg: #1f1f21;
   --bg-subtle: #ffff;
-  --surface: hsl(240, 3%, 17%);
+  --surface: rgba(42, 42, 45, 1);
+  --surface-raised: rgba(255, 255, 255, 0.12);
   --surface-hover: rgba(255, 255, 255, 0.06);
   --surface-active: #ffff;
   --surface-muted: #ffff;
