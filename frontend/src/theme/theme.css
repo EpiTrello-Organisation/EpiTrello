@@ -6,8 +6,9 @@
   --bg: rgba(31, 31, 33, 1);
   --bg-subtle: #ffff;
   --surface: rgba(42, 42, 45, 1);
-  --surface-raised: rgba(255, 255, 255, 0.12);
   --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-raised: rgba(255, 255, 255, 0.12);
+  --surface-raised-hover: rgba(255, 255, 255, 0.18);
   --surface-active: #ffff;
   --surface-muted: #ffff;
   --surface-overlay: #ffff;
@@ -32,11 +33,11 @@
   --primary-foreground: #ffff;
 
   --secondary: rgba(245, 245, 247, 1);
-  --secondary-hover: rgba(245, 245, 247, 0.50);;
+  --secondary-hover: rgba(245, 245, 247, 0.5);
   --secondary-active: #ffff;
   --secondary-foreground: #ffff;
 
   --invisible: rgba(0, 0, 0, 0);
   --transparent: rgba(0, 0, 0, 0.25);
-  --transparent-strong: rgba(0, 0, 0, 0.50);
+  --transparent-strong: rgba(0, 0, 0, 0.5);
 }
