@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.api.deps import get_db, get_current_user
+from app.core.ws_manager import ws_manager
 from app.models.list import List
-from app.models.board import Board
 from app.models.board_member import BoardMember
 from app.models.user import User
 from app.schemas.list import ListCreate, ListOut, ListUpdate
 
 router = APIRouter(prefix="/lists", tags=["Lists"])
+
 
 @router.get("/board/{board_id}", response_model=list[ListOut])
 def get_lists(
@@ -17,10 +18,14 @@ def get_lists(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    is_member = db.query(BoardMember).filter(
-        BoardMember.board_id == board_id,
-        BoardMember.user_id == current_user.id
-    ).first()
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if not is_member:
         raise HTTPException(status_code=403, detail="Not a board member")
@@ -32,17 +37,22 @@ def get_lists(
         .all()
     )
 
+
 @router.post("/", response_model=ListOut, status_code=status.HTTP_201_CREATED)
-def create_list(
+async def create_list(
     list_in: ListCreate,
     board_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    is_member = db.query(BoardMember).filter(
-        BoardMember.board_id == board_id,
-        BoardMember.user_id == current_user.id
-    ).first()
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if not is_member:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -66,10 +76,23 @@ def create_list(
     db.commit()
     db.refresh(new_list)
 
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        board_id,
+        {
+            "type": "list.created",
+            "payload": {
+                "board_id": str(board_id),
+                "list": ListOut.model_validate(new_list).model_dump(),
+            },
+        },
+    )
+
     return new_list
 
+
 @router.put("/{list_id}", response_model=ListOut)
-def update_list(
+async def update_list(
     list_id: UUID,
     list_in: ListUpdate,
     db: Session = Depends(get_db),
@@ -80,10 +103,14 @@ def update_list(
     if not lst:
         raise HTTPException(status_code=404, detail="List not found")
 
-    is_member = db.query(BoardMember).filter(
-        BoardMember.board_id == lst.board_id,
-        BoardMember.user_id == current_user.id
-    ).first()
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == lst.board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if not is_member:
         raise HTTPException(status_code=403, detail="Not authorized")
@@ -97,10 +124,23 @@ def update_list(
     db.commit()
     db.refresh(lst)
 
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        lst.board_id,
+        {
+            "type": "list.updated",
+            "payload": {
+                "board_id": str(lst.board_id),
+                "list": ListOut.model_validate(lst).model_dump(),
+            },
+        },
+    )
+
     return lst
 
+
 @router.delete("/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_list(
+async def delete_list(
     list_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -110,13 +150,32 @@ def delete_list(
     if not lst:
         raise HTTPException(status_code=404, detail="List not found")
 
-    is_member = db.query(BoardMember).filter(
-        BoardMember.board_id == lst.board_id,
-        BoardMember.user_id == current_user.id
-    ).first()
+    is_member = (
+        db.query(BoardMember)
+        .filter(
+            BoardMember.board_id == lst.board_id,
+            BoardMember.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if not is_member:
         raise HTTPException(status_code=403, detail="Not authorized")
 
+    board_id = lst.board_id
+    list_id_str = str(lst.id)
+
     db.delete(lst)
     db.commit()
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        board_id,
+        {
+            "type": "list.deleted",
+            "payload": {
+                "board_id": str(board_id),
+                "list_id": list_id_str,
+            },
+        },
+    )

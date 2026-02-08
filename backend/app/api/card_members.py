@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, require_card_board_member
+from app.core.ws_manager import ws_manager
 from app.models.board_member import BoardMember
 from app.models.card_member import CardMember
 from app.models.user import User
@@ -45,13 +46,17 @@ def list_card_members(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def add_card_member(
+async def add_card_member(
     card_id: UUID,
     payload: CardMemberByEmail,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    card, board_id = require_card_board_member(card_id=card_id, db=db, current_user=current_user)
+    card, board_id = require_card_board_member(
+        card_id=card_id,
+        db=db,
+        current_user=current_user,
+    )
 
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
@@ -82,17 +87,38 @@ def add_card_member(
     cm = CardMember(card_id=card.id, user_id=user.id)
     db.add(cm)
     db.commit()
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        board_id,
+        {
+            "type": "card.member.added",
+            "payload": {
+                "board_id": str(board_id),
+                "card_id": str(card.id),
+                "user_id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "assigned_by": str(current_user.id),
+            },
+        },
+    )
+
     return {"detail": "Member assigned to card"}
 
 
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-def remove_card_member(
+async def remove_card_member(
     card_id: UUID,
     payload: CardMemberByEmail,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    card, _board_id = require_card_board_member(card_id=card_id, db=db, current_user=current_user)
+    card, board_id = require_card_board_member(
+        card_id=card_id,
+        db=db,
+        current_user=current_user,
+    )
 
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
@@ -111,3 +137,19 @@ def remove_card_member(
 
     db.delete(cm)
     db.commit()
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        board_id,
+        {
+            "type": "card.member.removed",
+            "payload": {
+                "board_id": str(board_id),
+                "card_id": str(card.id),
+                "user_id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "removed_by": str(current_user.id),
+            },
+        },
+    )

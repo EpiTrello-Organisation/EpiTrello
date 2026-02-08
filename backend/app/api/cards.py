@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.api.deps import get_db, get_current_user
+from app.core.ws_manager import ws_manager
 from app.models.card import Card
 from app.models.list import List
 from app.models.board_member import BoardMember
@@ -11,8 +12,9 @@ from app.schemas.card import CardCreate, CardUpdate, CardOut
 
 router = APIRouter(prefix="/cards", tags=["Cards"])
 
+
 @router.post("/", response_model=CardOut, status_code=status.HTTP_201_CREATED)
-def create_card(
+async def create_card(
     list_id: UUID,
     card_in: CardCreate,
     db: Session = Depends(get_db),
@@ -53,6 +55,20 @@ def create_card(
     db.add(card)
     db.commit()
     db.refresh(card)
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        list_.board_id,
+        {
+            "type": "card.created",
+            "payload": {
+                "board_id": str(list_.board_id),
+                "list_id": str(list_id),
+                "card": CardOut.model_validate(card).model_dump(),
+            },
+        },
+    )
+
     return card
 
 
@@ -84,8 +100,9 @@ def list_cards(
         .all()
     )
 
+
 @router.put("/{card_id}", response_model=CardOut)
-def update_card(
+async def update_card(
     card_id: UUID,
     card_in: CardUpdate,
     db: Session = Depends(get_db),
@@ -118,11 +135,25 @@ def update_card(
 
     db.commit()
     db.refresh(card)
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        list_.board_id,
+        {
+            "type": "card.updated",
+            "payload": {
+                "board_id": str(list_.board_id),
+                "list_id": str(card.list_id),
+                "card": CardOut.model_validate(card).model_dump(),
+            },
+        },
+    )
+
     return card
 
 
 @router.delete("/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_card(
+async def delete_card(
     card_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -145,3 +176,16 @@ def delete_card(
 
     db.delete(card)
     db.commit()
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        list_.board_id,
+        {
+            "type": "card.deleted",
+            "payload": {
+                "board_id": str(list_.board_id),
+                "list_id": str(list_.id),
+                "card_id": str(card_id),
+            },
+        },
+    )

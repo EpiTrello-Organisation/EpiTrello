@@ -3,20 +3,24 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from app.api.deps import get_db, get_current_user, require_board_owner
+from app.core.ws_manager import ws_manager
 from app.models.board_member import BoardMember
 from app.models.user import User
-from app.schemas.board_member import BoardMemberAddByEmail
-from app.schemas.board_member import BoardMemberRemoveByEmail
-from app.schemas.board_member import BoardMemberOut
+from app.schemas.board_member import (
+    BoardMemberAddByEmail,
+    BoardMemberRemoveByEmail,
+    BoardMemberOut,
+)
 
 router = APIRouter(prefix="/boards/{board_id}/members", tags=["Board Members"])
 
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def add_member_by_email(
+async def add_member_by_email(
     board_id: UUID,
     payload: BoardMemberAddByEmail,
     db: Session = Depends(get_db),
-    _: BoardMember = Depends(require_board_owner),
+    owner: BoardMember = Depends(require_board_owner),
 ):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
@@ -33,9 +37,29 @@ def add_member_by_email(
     if exists:
         raise HTTPException(status_code=400, detail="User already member of this board")
 
-    bm = BoardMember(board_id=board_id, user_id=user.id, role="member")
+    bm = BoardMember(
+        board_id=board_id,
+        user_id=user.id,
+        role="member",
+    )
     db.add(bm)
     db.commit()
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        board_id,
+        {
+            "type": "board.member.added",
+            "payload": {
+                "board_id": str(board_id),
+                "user_id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "role": bm.role,
+                "added_by": str(owner.user_id),
+            },
+        },
+    )
 
     return {"detail": "Member added"}
 
@@ -80,12 +104,13 @@ def list_members(
         for row in rows
     ]
 
+
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
-def remove_member_by_email(
+async def remove_member_by_email(
     board_id: UUID,
     payload: BoardMemberRemoveByEmail,
     db: Session = Depends(get_db),
-    _: BoardMember = Depends(require_board_owner),
+    owner: BoardMember = Depends(require_board_owner),
 ):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
@@ -110,3 +135,18 @@ def remove_member_by_email(
 
     db.delete(member)
     db.commit()
+
+    # 🔔 WebSocket event
+    await ws_manager.broadcast(
+        board_id,
+        {
+            "type": "board.member.removed",
+            "payload": {
+                "board_id": str(board_id),
+                "user_id": str(user.id),
+                "email": user.email,
+                "username": user.username,
+                "removed_by": str(owner.user_id),
+            },
+        },
+    )
