@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/EpiTrello-Organisation/EpiTrello/compare/v0.3.0...v0.3.1) (2026-02-09)
+
+
+### Bug Fixes
+
+* **ci:** trigger GHCR publish on releases ([61ce41b](https://github.com/EpiTrello-Organisation/EpiTrello/commit/61ce41b7f5f3f0d33c91ebeeecfcb8545ec60d7c))
+* **ci:** trigger GHCR publish on releases ([875a157](https://github.com/EpiTrello-Organisation/EpiTrello/commit/875a15741867a06e43f5ae28442bcca99272bd05))
+
 ## [0.3.0](https://github.com/EpiTrello-Organisation/EpiTrello/compare/v0.2.0...v0.3.0) (2026-02-09)
 
 
