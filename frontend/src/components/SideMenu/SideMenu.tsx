@@ -31,7 +31,7 @@ function BoardsIcon() {
   );
 }
 
-function TemplatesIcon() {
+function OtherBoardsIcon() {
   return (
     <svg viewBox="0 0 24 24" className={styles.svg} aria-hidden="true">
       <rect x="4" y="6" width="16" height="14" rx="3" />
@@ -48,7 +48,7 @@ export default function SideMenu() {
     <aside className={styles.container} aria-label="Sidebar">
       <nav className={styles.nav}>
         <Item to="/boards" label="Boards" icon={<BoardsIcon />} />
-        <Item to="/templates" label="Templates" icon={<TemplatesIcon />} />
+        <Item to="/other-boards" label="Other Boards" icon={<OtherBoardsIcon />} />
       </nav>
     </aside>
   );

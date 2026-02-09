@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 
 import TopBar from '../../components/TopBar/TopBar';
 import SideMenu from '../../components/SideMenu/SideMenu';
-import CreateBoardModal from '@/components/CreateBoardModal/CreateBoardModal';
 
-import styles from './BoardsPage.module.css';
+import styles from './OtherBoardsPage.module.css';
 import { getBoardBackgroundStyle, useBoards } from '@/hooks/useBoards';
 import { apiFetch } from '@/api/fetcher';
 
@@ -13,12 +12,10 @@ type MeResponse = {
   id: string;
 };
 
-export default function BoardsPage() {
+export default function OtherBoardsPage() {
   const navigate = useNavigate();
 
-  const { boards, loading, createBoard } = useBoards();
-
-  const [createOpen, setCreateOpen] = useState(false);
+  const { boards, loading } = useBoards();
   const [meId, setMeId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +28,7 @@ export default function BoardsPage() {
         const data = (await res.json()) as MeResponse;
         if (!cancelled) setMeId(data.id);
       } catch {
-        // instentional
+        // ignore
       }
     })();
 
@@ -40,21 +37,10 @@ export default function BoardsPage() {
     };
   }, []);
 
-  const ownerBoards = useMemo(() => {
+  const memberBoards = useMemo(() => {
     if (!meId) return [];
-    return boards.filter((b) => b.owner_id === meId);
+    return boards.filter((b) => b.owner_id !== meId);
   }, [boards, meId]);
-
-  async function handleCreateBoard(payload: {
-    title: string;
-    background_kind: 'gradient' | 'unsplash';
-    background_value: string;
-    background_thumb_url?: string | null;
-  }) {
-    const created = await createBoard(payload);
-    setCreateOpen(false);
-    navigate(`/boards/${created.id}`);
-  }
 
   return (
     <div className={styles.page}>
@@ -64,7 +50,7 @@ export default function BoardsPage() {
 
         <main className={styles.main}>
           <div className={styles.grid} aria-busy={loading}>
-            {ownerBoards.map((b) => {
+            {memberBoards.map((b) => {
               const style = getBoardBackgroundStyle(b);
 
               return (
@@ -81,23 +67,8 @@ export default function BoardsPage() {
                 </button>
               );
             })}
-
-            <button
-              type="button"
-              className={`${styles.card} ${styles.createBoard}`}
-              onClick={() => setCreateOpen(true)}
-              aria-label="Create new board"
-            >
-              <div className={styles.createInner}>Create new board</div>
-            </button>
           </div>
         </main>
-
-        <CreateBoardModal
-          open={createOpen}
-          onClose={() => setCreateOpen(false)}
-          onCreate={handleCreateBoard}
-        />
       </div>
     </div>
   );

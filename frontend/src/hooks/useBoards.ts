@@ -6,6 +6,7 @@ export type BoardBackgroundKind = 'gradient' | 'unsplash';
 export type BoardModel = {
   id: string;
   title: string;
+  owner_id: string;
 
   background_kind?: BoardBackgroundKind | null;
   background_value?: string | null;
