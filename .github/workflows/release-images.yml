@@ -1,9 +1,8 @@
 name: Release Docker images (GHCR)
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -12,11 +11,21 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
+
+      - name: Compute version
+        id: ver
+        run: |
+          echo "TAG=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          echo "VERSION=${{ github.event.release.tag_name }}" | sed 's/^v//' | awk '{print "VERSION="$0}' >> $GITHUB_OUTPUT
 
       - name: Login to GHCR
         uses: docker/login-action@v3
@@ -31,7 +40,7 @@ jobs:
           context: ./backend
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-backend:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}-backend:${{ steps.ver.outputs.VERSION }}
             ghcr.io/${{ github.repository }}-backend:latest
 
       - name: Frontend - build & push
@@ -40,5 +49,5 @@ jobs:
           context: ./frontend
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}-frontend:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}-frontend:${{ steps.ver.outputs.VERSION }}
             ghcr.io/${{ github.repository }}-frontend:latest
