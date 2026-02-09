@@ -101,6 +101,11 @@ vi.mock('@/components/AddListComposer/AddListComposer', async () => {
         ),
         React.createElement('button', { type: 'button', onClick: props.onSubmit }, 'ALC_SUBMIT'),
         React.createElement('button', { type: 'button', onClick: props.onCancel }, 'ALC_CANCEL'),
+        React.createElement(
+          'button',
+          { type: 'button', onClick: () => props.onChange('     ') },
+          'ALC_SET_SPACES',
+        ),
       ),
   };
 });
@@ -118,7 +123,7 @@ function card(partial: Partial<CardModel>): CardModel {
     list_id: partial.list_id ?? 'l1',
     creator_id: partial.creator_id ?? 'u',
     created_at: partial.created_at ?? new Date().toISOString(),
-    labelIds: partial.labelIds,
+    label_ids: partial.label_ids ?? [],
   } as any;
 }
 
@@ -417,5 +422,277 @@ describe('components/BoardKanban', () => {
     });
 
     expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+  });
+
+  it('DragOverlay: dragStart with missing card id keeps overlay hidden (activeCard memo returns null)', async () => {
+    renderKanban({
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })] },
+      lists: [list('l1')],
+    });
+
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+
+    const { onDragStart } = getDndProps();
+
+    await act(async () => {
+      onDragStart({
+        active: { id: 'does-not-exist', data: { current: { type: 'card', listId: 'l1' } } },
+      } as any);
+    });
+
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+  });
+
+  it('onDragOver: overId not found in any list does nothing (findCardContainer returns null)', async () => {
+    const { onMoveCardBetweenLists } = renderKanban({
+      cardsByListId: {
+        l1: [card({ id: 'c1', list_id: 'l1' })],
+        l2: [card({ id: 'c2', list_id: 'l2' })],
+      },
+    });
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(
+        dragEvent({
+          activeId: 'c1',
+          overId: 'unknown-card-id',
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onMoveCardBetweenLists).not.toHaveBeenCalled();
+  });
+
+  it('AddListComposerBridge: submit with whitespace-only title does not call onAddList and does not reset', async () => {
+    const onAddList = vi.fn(async () => {});
+    renderKanban({ onAddList });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_OPEN' }));
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_SET_VALUE' }));
+    expect(screen.getByTestId('alc-value').textContent).toBe('  New List  ');
+  });
+
+  it('AddListComposerBridge: cancel closes and clears value', async () => {
+    const onAddList = vi.fn(async () => {});
+    renderKanban({ onAddList });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_OPEN' }));
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_SET_VALUE' }));
+
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('true');
+    expect(screen.getByTestId('alc-value').textContent).toBe('  New List  ');
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_CANCEL' }));
+
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('false');
+    expect(screen.getByTestId('alc-value')).toHaveTextContent('');
+  });
+
+  it('onDragOver: if over is null, returns early', async () => {
+    const { onMoveCardBetweenLists } = renderKanban();
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(
+        dragEvent({
+          activeId: 'c1',
+          overId: null,
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onMoveCardBetweenLists).not.toHaveBeenCalled();
+  });
+
+  it('onDragOver: if active type is not card, returns early', async () => {
+    const { onMoveCardBetweenLists } = renderKanban();
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(
+        dragEvent({
+          activeId: 'l1',
+          overId: 'list:l2',
+          activeType: 'list',
+        }),
+      );
+    });
+
+    expect(onMoveCardBetweenLists).not.toHaveBeenCalled();
+  });
+
+  it('onDragOver: if toListId cannot be resolved (overId unknown), returns early', async () => {
+    const { onMoveCardBetweenLists } = renderKanban({
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })], l2: [] },
+    });
+
+    const { onDragOver } = getDndProps();
+
+    await act(async () => {
+      onDragOver(
+        dragEvent({
+          activeId: 'c1',
+          overId: 'unknown',
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onMoveCardBetweenLists).not.toHaveBeenCalled();
+  });
+
+  it('onDragEnd: if over is null, returns early (no delegate, no commit)', async () => {
+    const { onDragEnd, onCommitCards } = renderKanban();
+
+    const { onDragEnd: dndOnDragEnd } = getDndProps();
+
+    await act(async () => {
+      await dndOnDragEnd(
+        dragEvent({
+          activeId: 'c1',
+          overId: null,
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onDragEnd).not.toHaveBeenCalled();
+    expect(onCommitCards).not.toHaveBeenCalled();
+  });
+
+  it('onDragEnd: if activeType is card but toListId cannot be resolved, returns early', async () => {
+    const { onCommitCards } = renderKanban({
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })], l2: [] },
+    });
+
+    const { onDragEnd: dndOnDragEnd } = getDndProps();
+
+    await act(async () => {
+      await dndOnDragEnd(
+        dragEvent({
+          activeId: 'c1',
+          overId: 'unknown',
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onCommitCards).not.toHaveBeenCalled();
+  });
+
+  it('onDragEnd: same list but activeId not found -> oldIndex < 0 => returns early', async () => {
+    const { onCommitCards } = renderKanban({
+      lists: [list('l1')],
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })] },
+    });
+
+    const { onDragEnd: dndOnDragEnd } = getDndProps();
+
+    await act(async () => {
+      await dndOnDragEnd(
+        dragEvent({
+          activeId: 'does-not-exist',
+          overId: 'list:l1',
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onCommitCards).not.toHaveBeenCalled();
+  });
+
+  it('onDragEnd: cross-list but moving card not found -> returns early', async () => {
+    const { onCommitCards } = renderKanban({
+      lists: [list('l1'), list('l2')],
+      cardsByListId: { l1: [card({ id: 'c1', list_id: 'l1' })], l2: [] },
+    });
+
+    const { onDragEnd: dndOnDragEnd } = getDndProps();
+
+    await act(async () => {
+      await dndOnDragEnd(
+        dragEvent({
+          activeId: 'does-not-exist',
+          overId: 'list:l2',
+          activeType: 'card',
+          fromListId: 'l1',
+        }),
+      );
+    });
+
+    expect(onCommitCards).not.toHaveBeenCalled();
+  });
+
+  it('handleDragEnd: always clears overlay even if onCommitCards throws (finally)', async () => {
+    const onCommitCards = vi.fn(async () => {
+      throw new Error('boom');
+    });
+
+    renderKanban({
+      lists: [list('l1'), list('l2')],
+      cardsByListId: {
+        l1: [card({ id: 'c1', list_id: 'l1' }), card({ id: 'c2', list_id: 'l1' })],
+        l2: [],
+      },
+      onCommitCards,
+    });
+
+    const { onDragStart, onDragEnd: dndOnDragEnd } = getDndProps();
+
+    await act(async () => {
+      onDragStart({
+        active: { id: 'c1', data: { current: { type: 'card', listId: 'l1' } } },
+      } as any);
+    });
+    expect(screen.getByTestId('BoardCardOverlay')).toHaveTextContent('Card:c1');
+
+    let err: unknown = null;
+
+    await act(async () => {
+      try {
+        await dndOnDragEnd(
+          dragEvent({ activeId: 'c1', overId: 'c2', activeType: 'card', fromListId: 'l1' }),
+        );
+      } catch (e) {
+        err = e;
+      }
+    });
+
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe('boom');
+    expect(screen.queryByTestId('BoardCardOverlay')).toBeNull();
+  });
+
+  it('AddListComposerBridge: submit with whitespace-only title does nothing (no call, no reset)', async () => {
+    const onAddList = vi.fn(async () => {});
+    renderKanban({ onAddList });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_OPEN' }));
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'ALC_SET_SPACES' }));
+    expect(screen.getByTestId('alc-value').textContent).toBe('     ');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'ALC_SUBMIT' }));
+    });
+
+    expect(onAddList).not.toHaveBeenCalled();
+    expect(screen.getByTestId('alc-open')).toHaveTextContent('true');
+    expect(screen.getByTestId('alc-value').textContent).toBe('     ');
   });
 });

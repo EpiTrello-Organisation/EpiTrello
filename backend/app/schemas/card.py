@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class CardBase(BaseModel):
@@ -17,6 +18,7 @@ class CardUpdate(BaseModel):
     description: str | None = None
     position: int | None = None
     list_id: UUID | None = None
+    label_ids: list[int] | None = None
 
 
 class CardOut(CardBase):
@@ -25,6 +27,7 @@ class CardOut(CardBase):
     list_id: UUID
     creator_id: UUID
     created_at: datetime
+    label_ids: list[int]
 
     class Config:
         from_attributes = True

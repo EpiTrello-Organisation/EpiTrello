@@ -1,8 +1,9 @@
-from sqlalchemy import Column, String, ForeignKey, Integer, DateTime, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
-from datetime import datetime
 import uuid
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
@@ -20,7 +21,15 @@ class Card(Base):
     list_id = Column(UUID(as_uuid=True), ForeignKey("lists.id"), nullable=False)
     creator_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
+    label_ids = Column(ARRAY(Integer), nullable=False, default=list)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     list = relationship("List", back_populates="cards")
     creator = relationship("User")
+
+    members = relationship(
+        "CardMember",
+        back_populates="card",
+        cascade="all, delete-orphan",
+    )

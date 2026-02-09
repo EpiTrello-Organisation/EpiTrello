@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import styles from './LabelsPopover.module.css';
 
-import { PencilSquareIcon, XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 
 export type LabelItem = {
-  id: string;
+  id: number;
   color: string;
 };
 
@@ -21,23 +21,12 @@ export default function LabelsPopover({
   onClose: () => void;
 
   labels: LabelItem[];
-
-  selectedIds: string[];
-
-  onToggle: (id: string) => void;
+  selectedIds: number[];
+  onToggle: (id: number) => void;
 }) {
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
-  const [labelQuery, setLabelQuery] = useState('');
-
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-
-  const filteredLabels = useMemo(() => {
-    const q = labelQuery.trim().toLowerCase();
-    if (!q) return labels;
-
-    return labels.filter((l) => l.id.toLowerCase().includes(q));
-  }, [labels, labelQuery]);
+  const selectedSet = useMemo(() => new Set<number>(selectedIds ?? []), [selectedIds]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,21 +66,8 @@ export default function LabelsPopover({
         </button>
       </div>
 
-      <div className={styles.searchRow}>
-        <MagnifyingGlassIcon className={styles.searchIcon} />
-        <input
-          className={styles.search}
-          value={labelQuery}
-          onChange={(e) => setLabelQuery(e.target.value)}
-          placeholder="Search labels..."
-          aria-label="Search labels"
-        />
-      </div>
-
-      <div className={styles.sectionTitle}>Labels</div>
-
       <div className={styles.list}>
-        {filteredLabels.map((l) => {
+        {labels.map((l) => {
           const checked = selectedSet.has(l.id);
 
           return (
@@ -105,26 +81,13 @@ export default function LabelsPopover({
                 type="button"
                 className={styles.colorBtn}
                 style={{ background: l.color }}
-                title={l.id}
+                title={`Label ${l.id}`}
                 onClick={() => onToggle(l.id)}
-                aria-label={`Toggle ${l.id}`}
+                aria-label={`Toggle label ${l.id}`}
               />
-
-              <button type="button" className={styles.editBtn} aria-label={`Edit ${l.id}`}>
-                <PencilSquareIcon className={styles.editIcon} />
-              </button>
             </div>
           );
         })}
-      </div>
-
-      <div className={styles.footer}>
-        <button type="button" className={styles.footerBtn}>
-          Create a new label
-        </button>
-        <button type="button" className={styles.footerBtn}>
-          Enable colorblind friendly mode
-        </button>
       </div>
     </div>
   );

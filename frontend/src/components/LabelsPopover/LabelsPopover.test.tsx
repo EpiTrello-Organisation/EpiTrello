@@ -3,9 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import LabelsPopover, { type LabelItem } from './LabelsPopover';
 
 vi.mock('@heroicons/react/24/outline', () => ({
-  PencilSquareIcon: (props: any) => <svg data-testid="pencil" {...props} />,
   XMarkIcon: (props: any) => <svg data-testid="xmark" {...props} />,
-  MagnifyingGlassIcon: (props: any) => <svg data-testid="search" {...props} />,
 }));
 
 function firePointerDown(target: EventTarget) {
@@ -20,7 +18,7 @@ describe('components/LabelsPopover', () => {
     document.body.innerHTML = '';
   });
 
-  function setup(opts?: { open?: boolean; labels?: LabelItem[]; selectedIds?: string[] }) {
+  function setup(opts?: { open?: boolean; labels?: LabelItem[]; selectedIds?: number[] }) {
     const anchorEl = document.createElement('div');
     document.body.appendChild(anchorEl);
 
@@ -30,12 +28,12 @@ describe('components/LabelsPopover', () => {
     const onToggle = vi.fn();
 
     const labels: LabelItem[] = opts?.labels ?? [
-      { id: 'green', color: '#0f0' },
-      { id: 'red', color: '#f00' },
-      { id: 'blue', color: '#00f' },
+      { id: 0, color: '#0f0' },
+      { id: 1, color: '#f00' },
+      { id: 2, color: '#00f' },
     ];
 
-    const selectedIds = opts?.selectedIds ?? ['red'];
+    const selectedIds = opts?.selectedIds ?? [1];
 
     const utils = render(
       <LabelsPopover
@@ -62,9 +60,10 @@ describe('components/LabelsPopover', () => {
     expect(screen.getByRole('dialog', { name: /labels/i })).toBeTruthy();
 
     expect(screen.getByRole('button', { name: /close labels/i })).toBeTruthy();
-    expect(screen.getByRole('textbox', { name: /search labels/i })).toBeTruthy();
 
-    expect(screen.getAllByText('Labels')).toHaveLength(2);
+    expect(screen.getAllByText('Labels')).toHaveLength(1);
+
+    expect(screen.queryByRole('textbox', { name: /search labels/i })).toBeNull();
   });
 
   it('close button calls onClose', () => {
@@ -75,7 +74,7 @@ describe('components/LabelsPopover', () => {
   });
 
   it('marks selectedIds as checked', () => {
-    setup({ open: true, selectedIds: ['red'] });
+    setup({ open: true, selectedIds: [1] });
 
     const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
     expect(checkboxes).toHaveLength(3);
@@ -88,9 +87,9 @@ describe('components/LabelsPopover', () => {
   it('clicking color button toggles that label', () => {
     const { onToggle } = setup({ open: true });
 
-    fireEvent.click(screen.getByRole('button', { name: /toggle green/i }));
+    fireEvent.click(screen.getByRole('button', { name: /toggle label 0/i }));
     expect(onToggle).toHaveBeenCalledTimes(1);
-    expect(onToggle).toHaveBeenCalledWith('green');
+    expect(onToggle).toHaveBeenCalledWith(0);
   });
 
   it('changing checkbox toggles that label', () => {
@@ -100,30 +99,7 @@ describe('components/LabelsPopover', () => {
     fireEvent.click(checkboxes[2]);
 
     expect(onToggle).toHaveBeenCalledTimes(1);
-    expect(onToggle).toHaveBeenCalledWith('blue');
-  });
-
-  it('filters labels by query (trim + case-insensitive, includes match)', () => {
-    setup({ open: true });
-
-    const input = screen.getByRole('textbox', { name: /search labels/i });
-
-    fireEvent.change(input, { target: { value: '  RE  ' } });
-
-    expect(screen.getByRole('button', { name: /toggle green/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /toggle red/i })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /toggle blue/i })).toBeNull();
-  });
-
-  it('filters labels with a query that matches only one item', () => {
-    setup({ open: true });
-
-    const input = screen.getByRole('textbox', { name: /search labels/i });
-    fireEvent.change(input, { target: { value: 'blu' } });
-
-    expect(screen.queryByRole('button', { name: /toggle green/i })).toBeNull();
-    expect(screen.queryByRole('button', { name: /toggle red/i })).toBeNull();
-    expect(screen.getByRole('button', { name: /toggle blue/i })).toBeTruthy();
+    expect(onToggle).toHaveBeenCalledWith(2);
   });
 
   it('clicking outside anchor and popover closes (capture pointerdown)', () => {

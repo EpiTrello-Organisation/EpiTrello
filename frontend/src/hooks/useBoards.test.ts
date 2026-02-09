@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { useBoards, getBoardBackgroundUrl, type BoardModel } from './useBoards';
+import {
+  useBoards,
+  getBoardBackgroundUrl,
+  getBoardBackgroundStyle,
+  type BoardModel,
+} from './useBoards';
 
 vi.mock('@/api/fetcher', () => ({
   apiFetch: vi.fn(),
@@ -71,8 +76,14 @@ describe('hooks/useBoards', () => {
 
     let out: BoardModel | undefined;
 
+    const payload = {
+      title: 'New board',
+      background_kind: 'gradient' as const,
+      background_value: 'g-1',
+    };
+
     await act(async () => {
-      out = await result.current.createBoard({ title: 'New board' });
+      out = await result.current.createBoard(payload);
     });
 
     expect(out).toEqual(created);
@@ -81,7 +92,7 @@ describe('hooks/useBoards', () => {
     expect(apiFetch).toHaveBeenLastCalledWith('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'New board' }),
+      body: JSON.stringify(payload),
     });
   });
 
@@ -96,7 +107,11 @@ describe('hooks/useBoards', () => {
     (apiFetch as any).mockResolvedValueOnce(makeResJson(created));
 
     await act(async () => {
-      await result.current.createBoard({ title: 'B' });
+      await result.current.createBoard({
+        title: 'B',
+        background_kind: 'gradient',
+        background_value: 'g-2',
+      });
     });
 
     expect(result.current.boards.map((b) => b.id)).toEqual(['b1', 'b2']);
@@ -119,6 +134,26 @@ describe('getBoardBackgroundUrl', () => {
     expect(getBoardBackgroundUrl(b)).toBe('snake');
   });
 
+  it('unsplash returns thumb url', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      background_kind: 'unsplash',
+      background_thumb_url: 'thumb',
+    };
+    expect(getBoardBackgroundUrl(b)).toBe('thumb');
+  });
+
+  it('unsplash returns null if thumb missing', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      background_kind: 'unsplash',
+      background_thumb_url: null,
+    };
+    expect(getBoardBackgroundUrl(b)).toBeNull();
+  });
+
   it('returns null when none', () => {
     const b: BoardModel = { id: 'b1', title: 'A' };
     expect(getBoardBackgroundUrl(b)).toBeNull();
@@ -127,5 +162,76 @@ describe('getBoardBackgroundUrl', () => {
   it('returns null when values are null', () => {
     const b: BoardModel = { id: 'b1', title: 'A', backgroundUrl: null, background_url: null };
     expect(getBoardBackgroundUrl(b)).toBeNull();
+  });
+});
+
+describe('getBoardBackgroundStyle', () => {
+  it('legacy backgroundUrl returns url() backgroundImage', () => {
+    const b: BoardModel = { id: 'b1', title: 'A', backgroundUrl: 'http://x' };
+    expect(getBoardBackgroundStyle(b)).toEqual({ backgroundImage: 'url(http://x)' });
+  });
+
+  it('legacy background_url returns url() backgroundImage (when backgroundUrl missing)', () => {
+    const b: BoardModel = { id: 'b1', title: 'A', background_url: 'http://y' };
+    expect(getBoardBackgroundStyle(b)).toEqual({ backgroundImage: 'url(http://y)' });
+  });
+
+  it('unsplash returns url() backgroundImage when thumb exists', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      background_kind: 'unsplash',
+      background_thumb_url: 'thumb',
+    };
+    expect(getBoardBackgroundStyle(b)).toEqual({ backgroundImage: 'url(thumb)' });
+  });
+
+  it('unsplash returns undefined when thumb missing', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      background_kind: 'unsplash',
+      background_thumb_url: null,
+    };
+    expect(getBoardBackgroundStyle(b)).toBeUndefined();
+  });
+
+  it('gradient returns linear-gradient for known key', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      background_kind: 'gradient',
+      background_value: 'g-3',
+    };
+
+    const style = getBoardBackgroundStyle(b);
+    expect(style).toBeDefined();
+    expect(style?.backgroundImage).toContain('linear-gradient');
+    expect(style?.backgroundImage).toContain('#0ea5e9'); // g-3 signature
+  });
+
+  it('gradient returns undefined for unknown key', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      background_kind: 'gradient',
+      background_value: 'g-404',
+    };
+    expect(getBoardBackgroundStyle(b)).toBeUndefined();
+  });
+
+  it('returns undefined for unknown background_kind', () => {
+    const b: BoardModel = {
+      id: 'b1',
+      title: 'A',
+      // @ts-expect-error test unknown kind
+      background_kind: 'whatever',
+    };
+    expect(getBoardBackgroundStyle(b)).toBeUndefined();
+  });
+
+  it('returns undefined when nothing is set', () => {
+    const b: BoardModel = { id: 'b1', title: 'A' };
+    expect(getBoardBackgroundStyle(b)).toBeUndefined();
   });
 });

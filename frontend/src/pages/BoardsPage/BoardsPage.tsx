@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import TopBar from '../../components/TopBar/TopBar';
@@ -6,7 +6,12 @@ import SideMenu from '../../components/SideMenu/SideMenu';
 import CreateBoardModal from '@/components/CreateBoardModal/CreateBoardModal';
 
 import styles from './BoardsPage.module.css';
-import { getBoardBackgroundUrl, useBoards } from '@/hooks/useBoards';
+import { getBoardBackgroundStyle, useBoards } from '@/hooks/useBoards';
+import { apiFetch } from '@/api/fetcher';
+
+type MeResponse = {
+  id: string;
+};
 
 export default function BoardsPage() {
   const navigate = useNavigate();
@@ -14,8 +19,38 @@ export default function BoardsPage() {
   const { boards, loading, createBoard } = useBoards();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [meId, setMeId] = useState<string | null>(null);
 
-  async function handleCreateBoard(payload: { title: string }) {
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await apiFetch('/api/users/me');
+        if (!res.ok) return;
+        const data = (await res.json()) as MeResponse;
+        if (!cancelled) setMeId(data.id);
+      } catch {
+        // instentional
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ownerBoards = useMemo(() => {
+    if (!meId) return [];
+    return boards.filter((b) => b.owner_id === meId);
+  }, [boards, meId]);
+
+  async function handleCreateBoard(payload: {
+    title: string;
+    background_kind: 'gradient' | 'unsplash';
+    background_value: string;
+    background_thumb_url?: string | null;
+  }) {
     const created = await createBoard(payload);
     setCreateOpen(false);
     navigate(`/boards/${created.id}`);
@@ -29,8 +64,8 @@ export default function BoardsPage() {
 
         <main className={styles.main}>
           <div className={styles.grid} aria-busy={loading}>
-            {boards.map((b) => {
-              const bg = getBoardBackgroundUrl(b);
+            {ownerBoards.map((b) => {
+              const style = getBoardBackgroundStyle(b);
 
               return (
                 <button
@@ -39,10 +74,7 @@ export default function BoardsPage() {
                   className={styles.card}
                   onClick={() => navigate(`/boards/${b.id}`)}
                 >
-                  <div
-                    className={styles.preview}
-                    style={bg ? { backgroundImage: `url(${bg})` } : undefined}
-                  />
+                  <div className={styles.preview} style={style} />
                   <div className={styles.titleBar}>
                     <span className={styles.title}>{b.title}</span>
                   </div>
@@ -52,7 +84,7 @@ export default function BoardsPage() {
 
             <button
               type="button"
-              className={`${styles.card} ${styles.createCard}`}
+              className={`${styles.card} ${styles.createBoard}`}
               onClick={() => setCreateOpen(true)}
               aria-label="Create new board"
             >

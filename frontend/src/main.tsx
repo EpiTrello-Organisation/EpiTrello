@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import './theme/theme.css';
 
 import { bootstrapTheme } from './theme/bootstrapTheme';
 import { ThemeProvider } from './theme/ThemeProvider';

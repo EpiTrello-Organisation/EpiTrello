@@ -5,8 +5,8 @@
   border: none;
   cursor: pointer;
 
-  background: rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--transparent);
+  color: var(--text-subtle);
 
   font-size: 15px;
   font-weight: 700;
@@ -18,13 +18,14 @@
 }
 
 .addListBtn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--transparent-strong);
+  color: var(--text);
 }
 
 .addListComposer {
   width: 280px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--transparent-strong);
   padding: 8px;
   box-sizing: border-box;
 }
@@ -34,9 +35,9 @@
   height: 32px;
   border-radius: 10px;
 
-  background: rgba(0, 0, 0, 0.25);
-  border: 2px solid rgba(145, 180, 235, 0.85);
-  color: rgba(255, 255, 255, 0.92);
+  background: var(--transparent-strong);
+  border: 2px solid var(--border-focus);
+  color: var(--text);
 
   font-size: 16px;
   font-weight: 700;
@@ -60,8 +61,8 @@
   border: none;
   border-radius: 10px;
 
-  background: rgba(110, 180, 255, 0.9);
-  color: #0b1220;
+  background: var(--primary);
+  color: var(--text-inverse);
 
   font-size: 14px;
   font-weight: 700;
@@ -70,7 +71,7 @@
 }
 
 .addListPrimary:hover {
-  background: rgba(110, 180, 255, 0.96);
+  filter: brightness(1.2);
 }
 
 .addListCancel {
@@ -82,11 +83,12 @@
 
   background: transparent;
   cursor: pointer;
+  stroke: var(--text);
 
   display: grid;
   place-items: center;
 }
 
 .addListCancel:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--surface-hover);
 }
