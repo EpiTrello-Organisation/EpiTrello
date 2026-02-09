@@ -43,10 +43,7 @@ describe('components/BoardTopBar', () => {
 
     expect(screen.getByRole('button', { name: /edit board title/i })).toBeTruthy();
 
-    expect(screen.getByLabelText(/board members/i)).toBeTruthy();
-
     expect(screen.getByRole('button', { name: /filter/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /change visibility/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /share/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /board menu/i })).toBeTruthy();
   });

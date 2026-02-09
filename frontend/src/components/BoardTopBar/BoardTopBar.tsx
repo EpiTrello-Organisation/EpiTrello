@@ -44,18 +44,6 @@ export default function BoardTopBar({
       />
 
       <div className={styles.boardTopBarRight}>
-        <div className={styles.avatars} aria-label="Board members">
-          <div className={styles.avatar} title="Member A">
-            A
-          </div>
-          <div className={styles.avatar} title="Member B">
-            B
-          </div>
-          <div className={styles.avatar} title="Member C">
-            C
-          </div>
-        </div>
-
         <button type="button" className={styles.topbarIconBtn} aria-label="Filter" title="Filter">
           <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
             <path
@@ -65,23 +53,6 @@ export default function BoardTopBar({
               strokeWidth="2.0"
               strokeLinecap="round"
             />
-          </svg>
-        </button>
-
-        <button
-          type="button"
-          className={styles.topbarIconBtn}
-          aria-label="Change visibility"
-          title="Visibility"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
-            <path
-              d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.0"
-            />
-            <circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" strokeWidth="2.0" />
           </svg>
         </button>
 
