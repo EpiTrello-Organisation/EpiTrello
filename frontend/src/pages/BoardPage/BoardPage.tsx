@@ -114,6 +114,7 @@ export default function BoardPage() {
       {selectedCard && (
         <CardModal
           card={selectedCard}
+          boardId={boardId}
           onClose={() => setSelectedCardId(null)}
           onRename={(nextTitle) =>
             cardActions.renameCard(selectedCard.id, selectedCard.list_id, nextTitle)
