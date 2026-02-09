@@ -4,10 +4,12 @@ import EditableText from '../EditableText/EditableText';
 import ShareModal from '../ShareModal/ShareModal';
 
 export default function BoardTopBar({
+  boardId,
   title,
   onRename,
   onDeleteBoard,
 }: {
+  boardId?: string;
   title: string;
   onRename: (nextTitle: string) => void;
   onDeleteBoard: () => void;
@@ -124,7 +126,7 @@ export default function BoardTopBar({
         </div>
       </div>
 
-      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} boardId={boardId} />
     </div>
   );
 }

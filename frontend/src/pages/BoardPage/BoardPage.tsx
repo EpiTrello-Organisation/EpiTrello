@@ -86,6 +86,7 @@ export default function BoardPage() {
       <TopBar />
 
       <BoardTopBar
+        boardId={boardId}
         title={board?.title ?? 'Board'}
         onRename={boardActions.renameBoard}
         onDeleteBoard={async () => {
