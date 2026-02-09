@@ -36,6 +36,28 @@ vi.mock('@/hooks/useBoards', () => ({
   getBoardBackgroundStyle: (b: BoardModel) => hooks.getBoardBackgroundStyle(b),
 }));
 
+const api = vi.hoisted(() => ({
+  meId: 'me-123',
+}));
+
+vi.mock('@/api/fetcher', () => ({
+  apiFetch: vi.fn(async (url: string) => {
+    if (url === '/api/users/me') {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ id: api.meId }),
+      } as any;
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    } as any;
+  }),
+}));
+
 vi.mock('../../components/TopBar/TopBar', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
   return { default: () => React.createElement('div', { 'data-testid': 'TopBar' }, 'TopBar') };
@@ -69,7 +91,8 @@ vi.mock('@/components/CreateBoardModal/CreateBoardModal', async () => {
                 title: '  New Board  ',
                 background_kind: 'unsplash',
                 background_value: 'img-1',
-                background_thumb_url: 'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
+                background_thumb_url:
+                  'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
               }),
           },
           'CBM_CREATE',
@@ -85,6 +108,10 @@ function renderPage() {
       <BoardsPage />
     </MemoryRouter>,
   );
+}
+
+async function flushPromises() {
+  await act(async () => {});
 }
 
 describe('pages/BoardsPage', () => {
@@ -103,44 +130,53 @@ describe('pages/BoardsPage', () => {
     hooks.getBoardBackgroundStyle = vi.fn((_b: BoardModel) => undefined);
 
     modal.lastProps = null;
+
+    api.meId = 'me-123';
   });
 
-  it('renders TopBar + SideMenu', () => {
+  it('renders TopBar + SideMenu', async () => {
     renderPage();
+    await flushPromises();
+
     expect(screen.getByTestId('TopBar')).toBeTruthy();
     expect(screen.getByTestId('SideMenu')).toBeTruthy();
   });
 
-  it('sets aria-busy based on loading', () => {
+  it('sets aria-busy based on loading', async () => {
     hooks.loading = true;
     renderPage();
+    await flushPromises();
 
     const grid = screen.getByRole('main').querySelector('[aria-busy]') as HTMLElement;
     expect(grid).toBeTruthy();
     expect(grid.getAttribute('aria-busy')).toBe('true');
   });
 
-  it('renders boards and navigates when clicking a board card', () => {
+  it('renders boards and navigates when clicking a board card', async () => {
     hooks.boards = [
-      { id: 'b1', title: 'Board 1' },
-      { id: 'b2', title: 'Board 2' },
+      { id: 'b1', title: 'Board 1', owner_id: 'me-123' },
+      { id: 'b2', title: 'Board 2', owner_id: 'me-123' },
     ] as any;
 
     renderPage();
+
+    await screen.findByText('Board 2');
 
     fireEvent.click(screen.getByText('Board 2'));
     expect(nav.navigate).toHaveBeenCalledTimes(1);
     expect(nav.navigate).toHaveBeenCalledWith('/boards/b2');
   });
 
-  it('applies preview backgroundImage when getBoardBackgroundStyle returns a value', () => {
-    hooks.boards = [{ id: 'b1', title: 'Board 1' }] as any;
+  it('applies preview backgroundImage when getBoardBackgroundStyle returns a value', async () => {
+    hooks.boards = [{ id: 'b1', title: 'Board 1', owner_id: 'me-123' }] as any;
 
     hooks.getBoardBackgroundStyle = vi.fn(() => ({
       backgroundImage: 'url(https://img.test/x.png)',
     }));
 
     renderPage();
+
+    await screen.findByText('Board 1');
 
     expect(hooks.getBoardBackgroundStyle).toHaveBeenCalledTimes(1);
 
@@ -152,8 +188,9 @@ describe('pages/BoardsPage', () => {
     expect(preview.style.backgroundImage).toContain('https://img.test/x.png');
   });
 
-  it('opens CreateBoardModal when clicking "Create new board"', () => {
+  it('opens CreateBoardModal when clicking "Create new board"', async () => {
     renderPage();
+    await flushPromises();
 
     expect(screen.getByTestId('cbm-open')).toHaveTextContent('false');
 
@@ -161,8 +198,9 @@ describe('pages/BoardsPage', () => {
     expect(screen.getByTestId('cbm-open')).toHaveTextContent('true');
   });
 
-  it('CreateBoardModal onClose closes modal', () => {
+  it('CreateBoardModal onClose closes modal', async () => {
     renderPage();
+    await flushPromises();
 
     fireEvent.click(screen.getByRole('button', { name: /create new board/i }));
     expect(screen.getByTestId('cbm-open')).toHaveTextContent('true');
@@ -192,7 +230,8 @@ describe('pages/BoardsPage', () => {
       title: '  New Board  ',
       background_kind: 'unsplash',
       background_value: 'img-1',
-      background_thumb_url: 'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
+      background_thumb_url:
+        'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
     });
 
     expect(screen.getByTestId('cbm-open')).toHaveTextContent('false');
