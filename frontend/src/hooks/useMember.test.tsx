@@ -1,6 +1,5 @@
-// src/hooks/useMember.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor, act } from '@testing-library/react';
 
 import { useMember } from './useMember';
 import type { BoardMemberApi } from './useMember';
@@ -34,6 +33,34 @@ function mkRes(opts: {
   } as any; // Response-ish
 }
 
+async function actResolve<T>(fn: () => Promise<T>): Promise<T> {
+  let out!: T;
+  await act(async () => {
+    out = await fn();
+  });
+  return out;
+}
+
+/**
+ * Important: ne laisse PAS act() rejeter.
+ * On capture l'erreur dans le act, sinon React n'a parfois pas le temps
+ * de flush setError(...) avant que le test "throw".
+ */
+async function actReject(fn: () => Promise<any>): Promise<any> {
+  let err: any = null;
+
+  await act(async () => {
+    try {
+      await fn();
+    } catch (e) {
+      err = e;
+    }
+  });
+
+  if (!err) throw new Error('Expected function to throw');
+  return err;
+}
+
 beforeEach(() => {
   apiFetchMock.mockReset();
 });
@@ -59,7 +86,7 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      const out = await result.current.actions.getMembers();
+      const out = await actResolve(() => result.current.actions.getMembers());
       expect(out).toEqual([]);
 
       expect(apiFetchMock).toHaveBeenCalledWith('/api/boards/b1/members/');
@@ -76,7 +103,7 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      const out = await result.current.actions.getMembers();
+      const out = await actResolve(() => result.current.actions.getMembers());
       expect(out).toEqual(members);
 
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -90,10 +117,8 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.getMembers()).rejects.toMatchObject({
-        status: 403,
-        detail: 'Forbidden',
-      });
+      const err = await actReject(() => result.current.actions.getMembers());
+      expect(err).toMatchObject({ status: 403, detail: 'Forbidden' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
       await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -107,10 +132,8 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.getMembers()).rejects.toMatchObject({
-        status: 500,
-        detail: 'Server exploded',
-      });
+      const err = await actReject(() => result.current.actions.getMembers());
+      expect(err).toMatchObject({ status: 500, detail: 'Server exploded' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
       await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -124,10 +147,8 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.getMembers()).rejects.toMatchObject({
-        status: 502,
-        detail: 'Request failed',
-      });
+      const err = await actReject(() => result.current.actions.getMembers());
+      expect(err).toMatchObject({ status: 502, detail: 'Request failed' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
       await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -136,6 +157,7 @@ describe('useMember', () => {
 
     it('sets loading true during pending request, then false', async () => {
       let resolve!: (v: any) => void;
+
       apiFetchMock.mockReturnValue(
         new Promise((r) => {
           resolve = r;
@@ -144,12 +166,20 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      const p = result.current.actions.getMembers();
+      let p!: Promise<BoardMemberApi[]>;
+      await act(async () => {
+        p = result.current.actions.getMembers();
+      });
+
       await waitFor(() => expect(result.current.loading).toBe(true));
 
-      resolve(mkRes({ ok: true, status: 200, json: [] }));
-      await expect(p).resolves.toEqual([]);
+      // IMPORTANT: resolve + await p DANS act, sinon warning act(...)
+      await act(async () => {
+        resolve(mkRes({ ok: true, status: 200, json: [] }));
+        await p;
+      });
 
+      await expect(p).resolves.toEqual([]);
       await waitFor(() => expect(result.current.loading).toBe(false));
       expect(result.current.error).toBe(null);
     });
@@ -170,7 +200,7 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b 1'));
 
-      const out = await result.current.actions.addMember('X@Y.com');
+      const out = await actResolve(() => result.current.actions.addMember('X@Y.com'));
       expect(out).toEqual({ status: 201, detail: 'Created' });
 
       expect(apiFetchMock).toHaveBeenCalledWith('/api/boards/b%201/members/', {
@@ -190,10 +220,8 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.addMember('a@a.com')).rejects.toMatchObject({
-        status: 400,
-        detail: 'Bad request',
-      });
+      const err = await actReject(() => result.current.actions.addMember('a@a.com'));
+      expect(err).toMatchObject({ status: 400, detail: 'Bad request' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
       await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -207,7 +235,7 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      const out = await result.current.actions.addMember('a@a.com');
+      const out = await actResolve(() => result.current.actions.addMember('a@a.com'));
       expect(out).toEqual({ status: 200, detail: 'OK' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
@@ -228,7 +256,7 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.deleteMember('a@a.com')).resolves.toBeUndefined();
+      await actResolve(() => result.current.actions.deleteMember('a@a.com'));
 
       expect(apiFetchMock).toHaveBeenCalledWith('/api/boards/b1/members/', {
         method: 'DELETE',
@@ -247,10 +275,8 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.deleteMember('a@a.com')).rejects.toMatchObject({
-        status: 403,
-        detail: 'Only owner can remove',
-      });
+      const err = await actReject(() => result.current.actions.deleteMember('a@a.com'));
+      expect(err).toMatchObject({ status: 403, detail: 'Only owner can remove' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
       await waitFor(() => expect(result.current.error).toBeTruthy());
@@ -264,10 +290,8 @@ describe('useMember', () => {
 
       const { result } = renderHook(() => useMember('b1'));
 
-      await expect(result.current.actions.deleteMember('a@a.com')).rejects.toMatchObject({
-        status: 500,
-        detail: 'Request failed',
-      });
+      const err = await actReject(() => result.current.actions.deleteMember('a@a.com'));
+      expect(err).toMatchObject({ status: 500, detail: 'Request failed' });
 
       await waitFor(() => expect(result.current.loading).toBe(false));
       await waitFor(() => expect(result.current.error).toBeTruthy());
