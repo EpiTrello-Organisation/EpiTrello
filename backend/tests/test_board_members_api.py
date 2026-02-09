@@ -1,6 +1,5 @@
 """Tests for /api/boards/{board_id}/members endpoints."""
 
-import uuid
 from tests.conftest import register_and_login
 
 
@@ -11,7 +10,9 @@ def _setup_board(client, headers):
 
 class TestAddBoardMember:
     def test_add_member_success(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
         register_and_login(client, email="bob@example.com", username="bob")
@@ -36,7 +37,9 @@ class TestAddBoardMember:
         assert resp.status_code == 404
 
     def test_add_member_already_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
         register_and_login(client, email="bob@example.com", username="bob")
@@ -54,10 +57,14 @@ class TestAddBoardMember:
         assert resp.status_code == 400
 
     def test_add_member_not_owner(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
-        _, _, headers_bob = register_and_login(client, email="bob@example.com", username="bob")
+        _, _, headers_bob = register_and_login(
+            client, email="bob@example.com", username="bob"
+        )
 
         register_and_login(client, email="charlie@example.com", username="charlie")
 
@@ -77,7 +84,9 @@ class TestAddBoardMember:
 
 class TestListBoardMembers:
     def test_list_members_owner_only(self, client):
-        _, _, headers = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers)
 
         resp = client.get(f"/api/boards/{board_id}/members/", headers=headers)
@@ -87,7 +96,9 @@ class TestListBoardMembers:
         assert data[0]["role"] == "owner"
 
     def test_list_members_multiple(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
         register_and_login(client, email="bob@example.com", username="bob")
@@ -101,17 +112,23 @@ class TestListBoardMembers:
         assert len(resp.json()) == 2
 
     def test_list_members_not_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
-        _, _, headers_bob = register_and_login(client, email="bob@example.com", username="bob")
+        _, _, headers_bob = register_and_login(
+            client, email="bob@example.com", username="bob"
+        )
         resp = client.get(f"/api/boards/{board_id}/members/", headers=headers_bob)
         assert resp.status_code == 403
 
 
 class TestRemoveBoardMember:
     def test_remove_member_success(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
         register_and_login(client, email="bob@example.com", username="bob")
@@ -126,8 +143,7 @@ class TestRemoveBoardMember:
             headers=headers_alice,
             params={"email": "bob@example.com"},
         )
-        from starlette.testclient import TestClient
-        import httpx
+
         resp = client.request(
             "DELETE",
             f"/api/boards/{board_id}/members/",
@@ -149,7 +165,9 @@ class TestRemoveBoardMember:
         assert resp.status_code == 404
 
     def test_remove_owner_fails(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
         resp = client.request(
@@ -162,7 +180,9 @@ class TestRemoveBoardMember:
         assert "owner" in resp.json()["detail"].lower()
 
     def test_remove_non_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _setup_board(client, headers_alice)
 
         register_and_login(client, email="bob@example.com", username="bob")

@@ -1,15 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user, require_board_owner
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user, get_db, require_board_owner
 from app.models.board_member import BoardMember
 from app.models.user import User
-from app.schemas.board_member import BoardMemberAddByEmail
-from app.schemas.board_member import BoardMemberRemoveByEmail
-from app.schemas.board_member import BoardMemberOut
+from app.schemas.board_member import (
+    BoardMemberAddByEmail,
+    BoardMemberOut,
+    BoardMemberRemoveByEmail,
+)
 
 router = APIRouter(prefix="/boards/{board_id}/members", tags=["Board Members"])
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def add_member_by_email(
@@ -44,7 +48,7 @@ def add_member_by_email(
 def list_members(
     board_id: UUID,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     # Vérifier que l'utilisateur courant est membre du board
     is_member = (
@@ -80,6 +84,7 @@ def list_members(
         for row in rows
     ]
 
+
 @router.delete("/", status_code=status.HTTP_204_NO_CONTENT)
 def remove_member_by_email(
     board_id: UUID,
@@ -100,7 +105,9 @@ def remove_member_by_email(
         .first()
     )
     if not member:
-        raise HTTPException(status_code=404, detail="User is not a member of this board")
+        raise HTTPException(
+            status_code=404, detail="User is not a member of this board"
+        )
 
     if member.role == "owner":
         raise HTTPException(

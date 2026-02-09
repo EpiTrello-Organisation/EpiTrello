@@ -1,6 +1,7 @@
 """Tests for /api/lists endpoints."""
 
 import uuid
+
 from tests.conftest import register_and_login
 
 
@@ -23,8 +24,14 @@ class TestGetLists:
         _, _, headers = register_and_login(client)
         board_id = _create_board(client, headers)
 
-        client.post(f"/api/lists/?board_id={board_id}", json={"title": "First"}, headers=headers)
-        client.post(f"/api/lists/?board_id={board_id}", json={"title": "Second"}, headers=headers)
+        client.post(
+            f"/api/lists/?board_id={board_id}", json={"title": "First"}, headers=headers
+        )
+        client.post(
+            f"/api/lists/?board_id={board_id}",
+            json={"title": "Second"},
+            headers=headers,
+        )
 
         resp = client.get(f"/api/lists/board/{board_id}", headers=headers)
         assert resp.status_code == 200
@@ -35,10 +42,14 @@ class TestGetLists:
         assert data[0]["position"] < data[1]["position"]
 
     def test_get_lists_not_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _create_board(client, headers_alice)
 
-        _, _, headers_bob = register_and_login(client, email="bob@example.com", username="bob")
+        _, _, headers_bob = register_and_login(
+            client, email="bob@example.com", username="bob"
+        )
         resp = client.get(f"/api/lists/board/{board_id}", headers=headers_bob)
         assert resp.status_code == 403
 
@@ -63,15 +74,23 @@ class TestCreateList:
         _, _, headers = register_and_login(client)
         board_id = _create_board(client, headers)
 
-        client.post(f"/api/lists/?board_id={board_id}", json={"title": "A"}, headers=headers)
-        resp = client.post(f"/api/lists/?board_id={board_id}", json={"title": "B"}, headers=headers)
+        client.post(
+            f"/api/lists/?board_id={board_id}", json={"title": "A"}, headers=headers
+        )
+        resp = client.post(
+            f"/api/lists/?board_id={board_id}", json={"title": "B"}, headers=headers
+        )
         assert resp.json()["position"] == 1
 
     def test_create_list_not_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _create_board(client, headers_alice)
 
-        _, _, headers_bob = register_and_login(client, email="bob@example.com", username="bob")
+        _, _, headers_bob = register_and_login(
+            client, email="bob@example.com", username="bob"
+        )
         resp = client.post(
             f"/api/lists/?board_id={board_id}",
             json={"title": "Nope"},
@@ -85,10 +104,14 @@ class TestUpdateList:
         _, _, headers = register_and_login(client)
         board_id = _create_board(client, headers)
 
-        create_resp = client.post(f"/api/lists/?board_id={board_id}", json={"title": "Old"}, headers=headers)
+        create_resp = client.post(
+            f"/api/lists/?board_id={board_id}", json={"title": "Old"}, headers=headers
+        )
         list_id = create_resp.json()["id"]
 
-        resp = client.put(f"/api/lists/{list_id}", json={"title": "New"}, headers=headers)
+        resp = client.put(
+            f"/api/lists/{list_id}", json={"title": "New"}, headers=headers
+        )
         assert resp.status_code == 200
         assert resp.json()["title"] == "New"
 
@@ -96,10 +119,14 @@ class TestUpdateList:
         _, _, headers = register_and_login(client)
         board_id = _create_board(client, headers)
 
-        create_resp = client.post(f"/api/lists/?board_id={board_id}", json={"title": "L"}, headers=headers)
+        create_resp = client.post(
+            f"/api/lists/?board_id={board_id}", json={"title": "L"}, headers=headers
+        )
         list_id = create_resp.json()["id"]
 
-        resp = client.put(f"/api/lists/{list_id}", json={"position": 5}, headers=headers)
+        resp = client.put(
+            f"/api/lists/{list_id}", json={"position": 5}, headers=headers
+        )
         assert resp.status_code == 200
         assert resp.json()["position"] == 5
 
@@ -110,13 +137,23 @@ class TestUpdateList:
         assert resp.status_code == 404
 
     def test_update_list_not_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _create_board(client, headers_alice)
-        create_resp = client.post(f"/api/lists/?board_id={board_id}", json={"title": "L"}, headers=headers_alice)
+        create_resp = client.post(
+            f"/api/lists/?board_id={board_id}",
+            json={"title": "L"},
+            headers=headers_alice,
+        )
         list_id = create_resp.json()["id"]
 
-        _, _, headers_bob = register_and_login(client, email="bob@example.com", username="bob")
-        resp = client.put(f"/api/lists/{list_id}", json={"title": "Hacked"}, headers=headers_bob)
+        _, _, headers_bob = register_and_login(
+            client, email="bob@example.com", username="bob"
+        )
+        resp = client.put(
+            f"/api/lists/{list_id}", json={"title": "Hacked"}, headers=headers_bob
+        )
         assert resp.status_code == 403
 
 
@@ -124,7 +161,9 @@ class TestDeleteList:
     def test_delete_list_success(self, client):
         _, _, headers = register_and_login(client)
         board_id = _create_board(client, headers)
-        create_resp = client.post(f"/api/lists/?board_id={board_id}", json={"title": "Bye"}, headers=headers)
+        create_resp = client.post(
+            f"/api/lists/?board_id={board_id}", json={"title": "Bye"}, headers=headers
+        )
         list_id = create_resp.json()["id"]
 
         resp = client.delete(f"/api/lists/{list_id}", headers=headers)
@@ -137,11 +176,19 @@ class TestDeleteList:
         assert resp.status_code == 404
 
     def test_delete_list_not_member(self, client):
-        _, _, headers_alice = register_and_login(client, email="alice@example.com", username="alice")
+        _, _, headers_alice = register_and_login(
+            client, email="alice@example.com", username="alice"
+        )
         board_id = _create_board(client, headers_alice)
-        create_resp = client.post(f"/api/lists/?board_id={board_id}", json={"title": "L"}, headers=headers_alice)
+        create_resp = client.post(
+            f"/api/lists/?board_id={board_id}",
+            json={"title": "L"},
+            headers=headers_alice,
+        )
         list_id = create_resp.json()["id"]
 
-        _, _, headers_bob = register_and_login(client, email="bob@example.com", username="bob")
+        _, _, headers_bob = register_and_login(
+            client, email="bob@example.com", username="bob"
+        )
         resp = client.delete(f"/api/lists/{list_id}", headers=headers_bob)
         assert resp.status_code == 403

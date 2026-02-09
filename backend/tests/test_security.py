@@ -1,8 +1,8 @@
 """Tests for core security helpers (hashing, JWT)."""
 
-from datetime import datetime, timedelta
-from unittest.mock import patch
+from datetime import datetime
 
+import pytest
 from jose import jwt
 
 from app.core.config import settings
@@ -64,8 +64,5 @@ class TestJWT:
 
     def test_decode_with_wrong_secret_fails(self):
         token = create_access_token("user-123")
-        try:
+        with pytest.raises(jwt.JWTError):
             jwt.decode(token, "wrong-secret", algorithms=[settings.JWT_ALGORITHM])
-            assert False, "Should have raised"
-        except Exception:
-            pass

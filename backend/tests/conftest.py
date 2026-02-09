@@ -10,26 +10,26 @@ import uuid
 from datetime import datetime
 
 import pytest
-from sqlalchemy import create_engine, event, String, Text
+from sqlalchemy import String, Text, create_engine, event
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.types import TypeDecorator
 
 from app.core.database import Base
 from app.core.security import hash_password
-from app.models.user import User
 from app.models.board import Board
 from app.models.board_member import BoardMember
-from app.models.list import List as ListModel
 from app.models.card import Card
-from app.models.card_member import CardMember
-
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.types import TypeDecorator
+from app.models.list import List as ListModel
+from app.models.user import User
 
 
 class JSONEncodedList(TypeDecorator):
     """Stores a Python list as a JSON-encoded TEXT column (SQLite compat)."""
+
     impl = Text
     cache_ok = True
 
@@ -46,6 +46,7 @@ class JSONEncodedList(TypeDecorator):
 
 class SQLiteUUID(TypeDecorator):
     """Stores UUID as a 32-char hex string in SQLite, returns uuid.UUID."""
+
     impl = String(32)
     cache_ok = True
 
@@ -73,7 +74,6 @@ def _compile_array_sqlite(type_, compiler, **kw):
 _orig_label_ids = Card.__table__.c.label_ids
 _orig_label_ids.type = JSONEncodedList()
 
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 for table in Base.metadata.tables.values():
     for col in table.columns:
         if isinstance(col.type, PG_UUID):
@@ -86,6 +86,7 @@ engine = create_engine(
     connect_args={"check_same_thread": False},
     poolclass=StaticPool,
 )
+
 
 @event.listens_for(engine, "connect")
 def _set_sqlite_pragma(dbapi_connection, _connection_record):
@@ -116,10 +117,9 @@ def client(db):
     """FastAPI TestClient with overridden DB dependency."""
     from fastapi.testclient import TestClient
 
+    from app.api import auth as auth_module
     from app.api.deps import get_db
     from app.main import app
-
-    from app.api import auth as auth_module
 
     def override_get_db():
         try:
@@ -219,7 +219,14 @@ def make_list(db):
 def make_card(db):
     """Factory fixture to create a Card on a given list."""
 
-    def _make(list_obj, creator: User, title="Card 1", position=0, description=None, label_ids=None):
+    def _make(
+        list_obj,
+        creator: User,
+        title="Card 1",
+        position=0,
+        description=None,
+        label_ids=None,
+    ):
         card = Card(
             id=uuid.uuid4(),
             title=title,
@@ -243,7 +250,9 @@ def auth_header(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
 
-def register_and_login(client, email="alice@example.com", username="alice", password="secret123"):
+def register_and_login(
+    client, email="alice@example.com", username="alice", password="secret123"
+):
     """Register a user via the API and return (user_data, token, headers)."""
     resp = client.post(
         "/api/auth/register",

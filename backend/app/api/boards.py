@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user, get_db
 from app.models.board import Board
-from app.models.user import User
-from app.schemas.board import BoardCreate, BoardOut
-from app.schemas.board import BoardUpdate
 from app.models.board_member import BoardMember
+from app.models.user import User
+from app.schemas.board import BoardCreate, BoardOut, BoardUpdate
 
 router = APIRouter(prefix="/boards", tags=["Boards"])
+
 
 @router.get("/", response_model=list[BoardOut])
 def list_boards(
@@ -22,6 +23,7 @@ def list_boards(
         .filter(BoardMember.user_id == current_user.id)
         .all()
     )
+
 
 @router.post("/", response_model=BoardOut, status_code=status.HTTP_201_CREATED)
 def create_board(
@@ -51,6 +53,7 @@ def create_board(
 
     return board
 
+
 @router.get("/{board_id}", response_model=BoardOut)
 def get_board(
     board_id: UUID,
@@ -65,13 +68,16 @@ def get_board(
     if board.owner_id != current_user.id:
         membership = (
             db.query(BoardMember)
-            .filter(BoardMember.board_id == board.id, BoardMember.user_id == current_user.id)
+            .filter(
+                BoardMember.board_id == board.id, BoardMember.user_id == current_user.id
+            )
             .first()
         )
         if not membership:
             raise HTTPException(status_code=403, detail="Not authorized")
 
     return board
+
 
 @router.put("/{board_id}", response_model=BoardOut)
 def update_board(
@@ -100,6 +106,7 @@ def update_board(
     db.commit()
     db.refresh(board)
     return board
+
 
 @router.delete("/{board_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_board(

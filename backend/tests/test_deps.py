@@ -4,13 +4,10 @@ import uuid
 
 import pytest
 from fastapi import HTTPException
-from unittest.mock import MagicMock, patch
 from fastapi.security import HTTPAuthorizationCredentials
 
-from app.api.deps import get_current_user, get_board_member, require_board_owner
+from app.api.deps import get_board_member, get_current_user, require_board_owner
 from app.core.security import create_access_token
-from app.models.user import User
-from app.models.board import Board
 from app.models.board_member import BoardMember
 
 
@@ -23,7 +20,9 @@ class TestGetCurrentUser:
         assert result.id == user_alice.id
 
     def test_invalid_token(self, db):
-        credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="badtoken")
+        credentials = HTTPAuthorizationCredentials(
+            scheme="Bearer", credentials="badtoken"
+        )
 
         with pytest.raises(HTTPException) as exc_info:
             get_current_user(credentials=credentials, db=db)
@@ -31,9 +30,12 @@ class TestGetCurrentUser:
 
     def test_token_with_no_sub(self, db):
         from jose import jwt
+
         from app.core.config import settings
 
-        token = jwt.encode({"foo": "bar"}, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+        token = jwt.encode(
+            {"foo": "bar"}, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM
+        )
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
         with pytest.raises(HTTPException) as exc_info:
@@ -71,7 +73,9 @@ class TestRequireBoardOwner:
 
     def test_member_but_not_owner(self, db, user_alice, user_bob, make_board):
         board = make_board(owner=user_alice)
-        bm = BoardMember(id=uuid.uuid4(), board_id=board.id, user_id=user_bob.id, role="member")
+        bm = BoardMember(
+            id=uuid.uuid4(), board_id=board.id, user_id=user_bob.id, role="member"
+        )
         db.add(bm)
         db.commit()
 

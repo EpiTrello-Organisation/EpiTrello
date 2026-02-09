@@ -6,12 +6,12 @@ from datetime import datetime
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.models.user import User
 from app.models.board import Board
 from app.models.board_member import BoardMember
-from app.models.list import List as ListModel
 from app.models.card import Card
 from app.models.card_member import CardMember
+from app.models.list import List as ListModel
+from app.models.user import User
 
 
 class TestUserModel:
@@ -98,7 +98,10 @@ class TestBoardModel:
         db.delete(board)
         db.commit()
 
-        assert db.query(BoardMember).filter(BoardMember.board_id == board_id).first() is None
+        assert (
+            db.query(BoardMember).filter(BoardMember.board_id == board_id).first()
+            is None
+        )
 
 
 class TestBoardMemberModel:
@@ -155,7 +158,7 @@ class TestListModel:
         make_list(board=board, title="B", position=2)
         make_list(board=board, title="A", position=1)
         db.refresh(board)
-        assert [l.title for l in board.lists] == ["A", "B"]
+        assert [lst.title for lst in board.lists] == ["A", "B"]
 
 
 class TestCardModel:
@@ -178,13 +181,17 @@ class TestCardModel:
         assert fetched.title == "My Card"
         assert fetched.creator_id == user_alice.id
 
-    def test_card_list_relationship(self, db, user_alice, make_board, make_list, make_card):
+    def test_card_list_relationship(
+        self, db, user_alice, make_board, make_list, make_card
+    ):
         board = make_board(owner=user_alice)
         lst = make_list(board=board)
         card = make_card(list_obj=lst, creator=user_alice)
         assert card.list.id == lst.id
 
-    def test_list_cards_cascade_delete(self, db, user_alice, make_board, make_list, make_card):
+    def test_list_cards_cascade_delete(
+        self, db, user_alice, make_board, make_list, make_card
+    ):
         board = make_board(owner=user_alice)
         lst = make_list(board=board)
         card = make_card(list_obj=lst, creator=user_alice)
@@ -195,7 +202,9 @@ class TestCardModel:
 
 
 class TestCardMemberModel:
-    def test_create_card_member(self, db, user_alice, user_bob, make_board, make_list, make_card):
+    def test_create_card_member(
+        self, db, user_alice, user_bob, make_board, make_list, make_card
+    ):
         board = make_board(owner=user_alice)
         lst = make_list(board=board)
         card = make_card(list_obj=lst, creator=user_alice)
@@ -206,7 +215,9 @@ class TestCardMemberModel:
 
         assert db.query(CardMember).filter(CardMember.card_id == card.id).count() == 1
 
-    def test_card_member_cascade_on_card_delete(self, db, user_alice, user_bob, make_board, make_list, make_card):
+    def test_card_member_cascade_on_card_delete(
+        self, db, user_alice, user_bob, make_board, make_list, make_card
+    ):
         board = make_board(owner=user_alice)
         lst = make_list(board=board)
         card = make_card(list_obj=lst, creator=user_alice)
@@ -219,7 +230,9 @@ class TestCardMemberModel:
         db.commit()
         assert db.query(CardMember).filter(CardMember.card_id == card_id).count() == 0
 
-    def test_card_members_relationship(self, db, user_alice, user_bob, make_board, make_list, make_card):
+    def test_card_members_relationship(
+        self, db, user_alice, user_bob, make_board, make_list, make_card
+    ):
         board = make_board(owner=user_alice)
         lst = make_list(board=board)
         card = make_card(list_obj=lst, creator=user_alice)

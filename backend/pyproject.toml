@@ -1,15 +1,35 @@
-[tool.black]
-line-length = 88
-target-version = ["py312"]
-
-[tool.isort]
-profile = "black"
-
 [tool.ruff]
 line-length = 88
 target-version = "py312"
-select = ["E", "F", "I"]
-ignore = ["E501"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "T20",  # flake8-print (no print statements)
+    "RET",  # flake8-return
+    "C4",   # flake8-comprehensions
+    "PTH",  # flake8-use-pathlib
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults (Depends)
+    "RET504", # unnecessary assignment before return
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
 
 [tool.mypy]
 python_version = "3.12"

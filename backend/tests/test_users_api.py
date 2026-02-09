@@ -18,5 +18,7 @@ class TestUsersMe:
         assert resp.status_code in (401, 403)
 
     def test_get_me_invalid_token(self, client):
-        resp = client.get("/api/users/me", headers={"Authorization": "Bearer invalidtoken"})
+        resp = client.get(
+            "/api/users/me", headers={"Authorization": "Bearer invalidtoken"}
+        )
         assert resp.status_code == 401

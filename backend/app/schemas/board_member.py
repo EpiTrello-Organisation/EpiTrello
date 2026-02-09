@@ -1,5 +1,7 @@
-from pydantic import BaseModel, EmailStr
 from uuid import UUID
+
+from pydantic import BaseModel, EmailStr
+
 
 class BoardMemberAddByEmail(BaseModel):
     email: EmailStr
@@ -7,6 +9,7 @@ class BoardMemberAddByEmail(BaseModel):
 
 class BoardMemberRemoveByEmail(BaseModel):
     email: EmailStr
+
 
 class BoardMemberOut(BaseModel):
     user_id: UUID

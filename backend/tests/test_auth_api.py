@@ -1,14 +1,15 @@
 """Tests for /api/auth endpoints (register + login)."""
 
-import pytest
-from tests.conftest import auth_header, register_and_login
-
 
 class TestRegister:
     def test_register_success(self, client):
         resp = client.post(
             "/api/auth/register",
-            json={"email": "new@example.com", "username": "newuser", "password": "pass1234"},
+            json={
+                "email": "new@example.com",
+                "username": "newuser",
+                "password": "pass1234",
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
