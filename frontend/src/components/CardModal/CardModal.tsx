@@ -6,7 +6,7 @@ import EditableText from '../EditableText/EditableText';
 import LabelsPopover from '../LabelsPopover/LabelsPopover';
 import MembersPopover, { type MemberItem } from '../MembersPopover/MembersPopover';
 import RichTextEditor from './RichTextEditor';
-import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
+import { TagIcon, UserIcon } from '@heroicons/react/24/outline';
 import { useMember } from '@/hooks/useMember';
 
 function IconDots() {
@@ -63,7 +63,6 @@ export default function CardModal({
     { user_id: string; email: string; username: string }[]
   >([]);
 
-  // NEW: draft members (local selection, synced on close)
   const [draftMemberIds, setDraftMemberIds] = useState<string[]>([]);
 
   const { actions: memberActions } = useMember(boardId, card.id);
@@ -74,7 +73,6 @@ export default function CardModal({
     .filter((id) => id >= 0 && id < LABELS.length)
     .map((id) => ({ id, color: LABELS[id].color }));
 
-  // NEW: selected ids come from draft (not from cardMembers)
   const selectedMemberIds = useMemo(() => draftMemberIds, [draftMemberIds]);
 
   const activeMembers = useMemo(() => {
@@ -98,7 +96,6 @@ export default function CardModal({
     setDraftLabelIds(card.label_ids ?? []);
   }, [card.id, card.label_ids]);
 
-  // GET board members + card members when opening / changing card
   useEffect(() => {
     let cancelled = false;
 
@@ -121,7 +118,6 @@ export default function CardModal({
         setBoardMembers(bm.map((m) => ({ id: m.user_id, username: m.username, email: m.email })));
         setCardMembers(cm);
 
-        // NEW: init draft from source-of-truth
         setDraftMemberIds(cm.map((m) => m.user_id));
       } catch {
         if (cancelled) return;
@@ -137,7 +133,6 @@ export default function CardModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card.id, boardId]);
 
-  // NEW: keep draft in sync when cardMembers changes (e.g. resync after save)
   useEffect(() => {
     setDraftMemberIds(cardMembers.map((m) => m.user_id));
   }, [card.id, cardMembers]);
@@ -190,7 +185,6 @@ export default function CardModal({
   async function closeLabelsPopover() {
     setLabelsOpen(false);
 
-    // évite les PUT inutiles
     const prev = card.label_ids ?? [];
     const next = draftLabelIds;
 
@@ -201,7 +195,6 @@ export default function CardModal({
     onUpdateLabels(next);
   }
 
-  // NEW: close members popover -> sync API once
   async function closeMembersPopover() {
     setMembersOpen(false);
 
@@ -339,16 +332,6 @@ export default function CardModal({
             />
           </div>
 
-          <button className={styles.quickActionBtn} type="button">
-            <CalendarIcon className={styles.quickActionIcon} />
-            Dates
-          </button>
-
-          <button className={styles.quickActionBtn} type="button">
-            <CheckCircleIcon className={styles.quickActionIcon} />
-            Checklist
-          </button>
-
           <div className={styles.quickActionWrapper} ref={membersAnchorRef}>
             <button
               className={`${styles.quickActionBtn} ${
@@ -359,7 +342,6 @@ export default function CardModal({
                 setMembersOpen((v) => !v);
                 setLabelsOpen(false);
 
-                // optional: reset draft to source-of-truth when opening
                 if (!membersOpen) setDraftMemberIds(cardMembers.map((m) => m.user_id));
               }}
               aria-haspopup="dialog"
