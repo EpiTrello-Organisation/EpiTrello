@@ -76,7 +76,7 @@ describe('useMember', () => {
     it('throws if boardId missing', async () => {
       const { result } = renderHook(() => useMember(undefined));
       await expect(result.current.actions.getMembers()).rejects.toThrow(
-        'boardId is required to fetch members',
+        /boardId is required to fetch (members|board members)/,
       );
     });
 
@@ -188,7 +188,7 @@ describe('useMember', () => {
     it('throws if boardId missing', async () => {
       const { result } = renderHook(() => useMember(undefined));
       await expect(result.current.actions.addMember('a@a.com')).rejects.toThrow(
-        'boardId is required to add a member',
+        /boardId is required to add (a member|a board member)/,
       );
     });
 
@@ -242,7 +242,7 @@ describe('useMember', () => {
     it('throws if boardId missing', async () => {
       const { result } = renderHook(() => useMember(undefined));
       await expect(result.current.actions.deleteMember('a@a.com')).rejects.toThrow(
-        'boardId is required to delete a member',
+        /boardId is required to delete (a member|a board member)/,
       );
     });
 
@@ -501,21 +501,21 @@ describe('useMember', () => {
     it('actions.getMembers throws if boardId missing (wrapper branch)', async () => {
       const { result } = renderHook(() => useMember(undefined));
       await expect(result.current.actions.getMembers()).rejects.toThrow(
-        'boardId is required to fetch members',
+        /boardId is required to fetch (members|board members)/,
       );
     });
 
     it('actions.addMember throws if boardId missing (wrapper branch)', async () => {
       const { result } = renderHook(() => useMember(undefined));
       await expect(result.current.actions.addMember('a@a.com')).rejects.toThrow(
-        'boardId is required to add a member',
+        /boardId is required to add (a member|a board member)/,
       );
     });
 
     it('actions.deleteMember throws if boardId missing (wrapper branch)', async () => {
       const { result } = renderHook(() => useMember(undefined));
       await expect(result.current.actions.deleteMember('a@a.com')).rejects.toThrow(
-        'boardId is required to delete a member',
+        /boardId is required to delete (a member|a board member)/,
       );
     });
   });

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { apiFetch } from '@/api/fetcher';
 
 export type BoardMemberApi = {
@@ -35,7 +35,7 @@ async function readDetail(res: Response): Promise<string> {
     const data = (await res.json()) as { detail?: unknown };
     if (typeof data?.detail === 'string') return data.detail;
   } catch {
-    // intentionnal
+    // intentional
   }
 
   try {
@@ -50,9 +50,6 @@ export function useMember(boardId?: string, cardId?: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
-  // -----------------------
-  // Board members
-  // -----------------------
   const getBoardMembers = useCallback(async (): Promise<BoardMemberApi[]> => {
     if (!boardId) throw new Error('boardId is required to fetch board members');
 
@@ -211,28 +208,39 @@ export function useMember(boardId?: string, cardId?: string) {
     [cardId],
   );
 
-  return {
-    loading,
-    error,
-    actions: {
-      getMembers: async () => {
-        if (!boardId) throw new Error('boardId is required to fetch members');
-        return getBoardMembers();
-      },
-      addMember: async (email: string) => {
-        if (!boardId) throw new Error('boardId is required to add a member');
-        return addBoardMember(email);
-      },
-      deleteMember: async (email: string) => {
-        if (!boardId) throw new Error('boardId is required to delete a member');
-        return deleteBoardMember(email);
-      },
+  const getMembers = useCallback(() => getBoardMembers(), [getBoardMembers]);
+  const addMember = useCallback((email: string) => addBoardMember(email), [addBoardMember]);
+  const deleteMember = useCallback(
+    (email: string) => deleteBoardMember(email),
+    [deleteBoardMember],
+  );
+
+  const actions = useMemo(
+    () => ({
+      getMembers,
+      addMember,
+      deleteMember,
+
+      getBoardMembers,
+      addBoardMember,
+      deleteBoardMember,
+
+      getCardMembers,
+      addCardMember,
+      deleteCardMember,
+    }),
+    [
+      getMembers,
+      addMember,
+      deleteMember,
       getBoardMembers,
       addBoardMember,
       deleteBoardMember,
       getCardMembers,
       addCardMember,
       deleteCardMember,
-    },
-  };
+    ],
+  );
+
+  return { loading, error, actions };
 }
