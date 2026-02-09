@@ -45,11 +45,7 @@ async function getMeUserId(): Promise<string | null> {
   if (!res.ok) return null;
   const data = (await res.json()) as { id?: unknown; user_id?: unknown };
   const id =
-    typeof data.id === 'string'
-      ? data.id
-      : typeof data.user_id === 'string'
-        ? data.user_id
-        : null;
+    typeof data.id === 'string' ? data.id : typeof data.user_id === 'string' ? data.user_id : null;
   return id;
 }
 

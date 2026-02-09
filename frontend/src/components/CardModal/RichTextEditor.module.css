@@ -75,7 +75,7 @@
 .editor :global(.tiptap) {
   outline: none;
   color: var(--text);
-  line-height: 1.00;
+  line-height: 1;
   font-size: 14px;
 }
 

@@ -84,9 +84,7 @@ export default function TopBar() {
   const results = useMemo(() => {
     const query = normalizeQuery(q);
     if (!query) return [];
-    return boards
-      .filter((b) => normalizeQuery(b.title).includes(query))
-      .slice(0, 8);
+    return boards.filter((b) => normalizeQuery(b.title).includes(query)).slice(0, 8);
   }, [boards, q]);
 
   function openBoard(id: string) {
@@ -147,10 +145,7 @@ export default function TopBar() {
                       className={styles.searchItem}
                       onClick={() => openBoard(b.id)}
                     >
-                      <div
-                        className={styles.searchThumb}
-                        style={getBoardBackgroundStyle(b)}
-                      />
+                      <div className={styles.searchThumb} style={getBoardBackgroundStyle(b)} />
                       <div className={styles.searchName}>{b.title}</div>
                     </button>
                   ))
@@ -159,11 +154,7 @@ export default function TopBar() {
             )}
           </div>
 
-          <button
-            type="button"
-            className={styles.createButton}
-            onClick={() => setCreateOpen(true)}
-          >
+          <button type="button" className={styles.createButton} onClick={() => setCreateOpen(true)}>
             Create
           </button>
         </div>

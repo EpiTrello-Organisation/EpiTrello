@@ -31,12 +31,7 @@ function IconDots() {
 function IconX() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.iconX}>
-      <path
-        d="M7 7l10 10M17 7L7 17"
-        fill="none"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
+      <path d="M7 7l10 10M17 7L7 17" fill="none" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -199,7 +194,6 @@ export default function BoardList({
             + <span>Add a card</span>
           </button>
         )}
-
       </div>
     </section>
   );

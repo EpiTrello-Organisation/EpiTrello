@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './BoardTopBar.module.css';
 import EditableText from '../EditableText/EditableText';
 import ShareModal from '../ShareModal/ShareModal';
-import FilterMembersModal, { type FilterMemberItem } from '../FilterMembersModal/FilterMembersModal';
+import FilterMembersModal, {
+  type FilterMemberItem,
+} from '../FilterMembersModal/FilterMembersModal';
 
 export default function BoardTopBar({
   boardId,
