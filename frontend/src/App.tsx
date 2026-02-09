@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import SignUpPage from './pages/SignUpPage/SignUpPage';
 import LogInPage from './pages/LogInPage/LogInPage';
 import BoardsPage from './pages/BoardsPage/BoardsPage';
-import TemplatesPage from './pages/TemplatesPage/TemplatesPage';
+import OtherBoardsPage from './pages/OtherBoardsPage/OtherBoardsPage';
 import BoardPage from './pages/BoardPage/BoardPage';
 import './App.css';
 
@@ -29,10 +29,10 @@ export default function App() {
       />
 
       <Route
-        path="/templates"
+        path="/other-boards"
         element={
           <ProtectedRoute>
-            <TemplatesPage />
+            <OtherBoardsPage />
           </ProtectedRoute>
         }
       />

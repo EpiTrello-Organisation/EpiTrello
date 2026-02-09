@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import TopBar from './TopBar';
 import { ThemeProvider } from '@/theme/ThemeProvider';
@@ -35,6 +35,57 @@ vi.mock('@/auth/token', () => ({
   logout: () => logoutMock(),
 }));
 
+import type { BoardModel } from '@/hooks/useBoards';
+
+const hooks = vi.hoisted(() => ({
+  boards: [] as BoardModel[],
+  createBoard: vi.fn(async (payload: any) => ({ id: 'created-1', title: payload.title })),
+  getBoardBackgroundStyle: vi.fn((_b: BoardModel) => undefined as React.CSSProperties | undefined),
+}));
+
+vi.mock('@/hooks/useBoards', () => ({
+  useBoards: () => ({
+    boards: hooks.boards,
+    loading: false,
+    createBoard: hooks.createBoard,
+  }),
+  getBoardBackgroundStyle: (b: BoardModel) => hooks.getBoardBackgroundStyle(b),
+}));
+
+const modal = vi.hoisted(() => ({
+  lastProps: null as any,
+}));
+
+vi.mock('@/components/CreateBoardModal/CreateBoardModal', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+  return {
+    default: (props: any) => {
+      modal.lastProps = props;
+
+      return React.createElement(
+        'div',
+        { 'data-testid': 'CreateBoardModal' },
+        React.createElement('div', { 'data-testid': 'cbm-open' }, String(props.open)),
+        React.createElement('button', { onClick: props.onClose }, 'CBM_CLOSE'),
+        React.createElement(
+          'button',
+          {
+            onClick: () =>
+              props.onCreate({
+                title: '  New Board  ',
+                background_kind: 'unsplash',
+                background_value: 'img-1',
+                background_thumb_url:
+                  'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
+              }),
+          },
+          'CBM_CREATE',
+        ),
+      );
+    },
+  };
+});
+
 function renderTopBar() {
   return render(
     <MemoryRouter>
@@ -60,6 +111,12 @@ describe('components/TopBar', () => {
     vi.clearAllMocks();
     document.body.innerHTML = '';
     localStorage.clear();
+
+    hooks.boards = [];
+    hooks.createBoard = vi.fn(async (payload: any) => ({ id: 'created-1', title: payload.title }));
+    hooks.getBoardBackgroundStyle = vi.fn((_b: BoardModel) => undefined);
+
+    modal.lastProps = null;
   });
 
   it('renders base UI: link to boards, search input, Create button', () => {
@@ -67,7 +124,7 @@ describe('components/TopBar', () => {
 
     expect(screen.getByRole('link', { name: /go to boards/i })).toBeTruthy();
     expect(screen.getByRole('searchbox', { name: /search boards/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /create/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^create$/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /profile/i })).toBeTruthy();
   });
 
@@ -200,5 +257,105 @@ describe('components/TopBar', () => {
     expect(dark.getAttribute('aria-pressed')).toBe('true');
     expect(light.getAttribute('aria-pressed')).toBe('false');
     expect(system.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('Search shows matching boards with thumb + name', () => {
+    hooks.boards = [
+      {
+        id: 'b1',
+        title: 'Alpha Board',
+        owner_id: 'u1',
+        background_kind: 'gradient',
+        background_value: 'g-1',
+      },
+      {
+        id: 'b2',
+        title: 'Beta Project',
+        owner_id: 'u1',
+        background_kind: 'unsplash',
+        background_thumb_url: 'https://img.test/beta.png',
+      },
+      { id: 'b3', title: 'Gamma', owner_id: 'u1' },
+    ] as any;
+
+    hooks.getBoardBackgroundStyle = vi.fn((b: any) =>
+      b.id === 'b2' ? ({ backgroundImage: 'url(https://img.test/beta.png)' } as any) : undefined,
+    );
+
+    renderTopBar();
+
+    const input = screen.getByRole('searchbox', { name: /search boards/i });
+    fireEvent.change(input, { target: { value: 'be' } });
+
+    expect(screen.getByRole('button', { name: /beta project/i })).toBeTruthy();
+
+    expect(hooks.getBoardBackgroundStyle).toHaveBeenCalled();
+  });
+
+  it('Clicking a search result navigates to the board and clears search', () => {
+    hooks.boards = [{ id: 'b2', title: 'Beta Project', owner_id: 'u1' }] as any;
+
+    renderTopBar();
+
+    const input = screen.getByRole('searchbox', { name: /search boards/i });
+    fireEvent.change(input, { target: { value: 'beta' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /beta project/i }));
+
+    expect(navigateMock).toHaveBeenCalledWith('/boards/b2');
+    expect((input as HTMLInputElement).value).toBe('');
+  });
+
+  it('Pressing Enter in search opens the first result', () => {
+    hooks.boards = [
+      { id: 'b1', title: 'Board 1', owner_id: 'u1' },
+      { id: 'b2', title: 'Board 2', owner_id: 'u1' },
+    ] as any;
+
+    renderTopBar();
+
+    const input = screen.getByRole('searchbox', { name: /search boards/i });
+    fireEvent.change(input, { target: { value: 'board' } });
+
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(navigateMock).toHaveBeenCalledWith('/boards/b1');
+  });
+
+  it('Clicking Create opens CreateBoardModal', () => {
+    renderTopBar();
+
+    expect(screen.getByTestId('cbm-open')).toHaveTextContent('false');
+
+    fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
+    expect(screen.getByTestId('cbm-open')).toHaveTextContent('true');
+  });
+
+  it('CreateBoardModal onCreate calls createBoard and navigates to created board', async () => {
+    hooks.createBoard = vi.fn(async (payload: any) => ({
+      id: 'created-123',
+      title: payload.title,
+    }));
+
+    renderTopBar();
+
+    fireEvent.click(screen.getByRole('button', { name: /^create$/i }));
+    expect(screen.getByTestId('cbm-open')).toHaveTextContent('true');
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'CBM_CREATE' }));
+    });
+
+    expect(hooks.createBoard).toHaveBeenCalledTimes(1);
+    expect(hooks.createBoard).toHaveBeenCalledWith({
+      title: '  New Board  ',
+      background_kind: 'unsplash',
+      background_value: 'img-1',
+      background_thumb_url:
+        'https://images.unsplash.com/photo-xxx?auto=format&fit=crop&w=2400&q=60',
+    });
+
+    expect(navigateMock).toHaveBeenCalledWith('/boards/created-123');
+    expect(screen.getByTestId('cbm-open')).toHaveTextContent('false');
   });
 });

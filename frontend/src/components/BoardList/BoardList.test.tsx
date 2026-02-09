@@ -3,9 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import BoardList, { type ListModel } from './BoardList';
 import type { CardModel } from '../BoardCard/BoardCard';
 
-/** -------------------------
- *  dnd-kit mocks
- *  ------------------------- */
 const dnd = vi.hoisted(() => ({
   useDroppable: vi.fn(),
   useSortable: vi.fn(),
@@ -30,9 +27,6 @@ vi.mock('@dnd-kit/utilities', () => ({
   CSS: { Transform: { toString: (t: any) => String(t) } },
 }));
 
-/** -------------------------
- *  internal hooks mocks
- *  ------------------------- */
 const hooks = vi.hoisted(() => ({
   useSortableStyle: vi.fn(),
 
@@ -72,10 +66,6 @@ vi.mock('@/hooks/useAddCardComposer', () => ({
     submitAddCard: hooks.submitAddCard,
   }),
 }));
-
-/** -------------------------
- *  child components mocks
- *  ------------------------- */
 
 vi.mock('../EditableText/EditableText', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
@@ -195,7 +185,6 @@ describe('components/BoardList', () => {
     expect(screen.getByRole('button', { name: /edit list title/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /list menu/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /\+.*add a card/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /create from template/i })).toBeTruthy();
   });
 
   it('calls useSortableStyle with list.id and wires refs', () => {

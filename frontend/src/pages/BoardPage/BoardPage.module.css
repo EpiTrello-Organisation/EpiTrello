@@ -4,12 +4,15 @@
   background-position: center;
   background-repeat: no-repeat;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
 }
 
 .kanban {
   height: calc(100vh - 56px - 48px);
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  min-width: 0;
 }
 
 .listsRow {

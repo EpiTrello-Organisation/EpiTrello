@@ -83,6 +83,7 @@
 
   background: transparent;
   cursor: pointer;
+  stroke: var(--text);
 
   display: grid;
   place-items: center;

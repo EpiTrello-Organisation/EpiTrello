@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import TopBar from '../../components/TopBar/TopBar';
@@ -7,6 +7,11 @@ import CreateBoardModal from '@/components/CreateBoardModal/CreateBoardModal';
 
 import styles from './BoardsPage.module.css';
 import { getBoardBackgroundStyle, useBoards } from '@/hooks/useBoards';
+import { apiFetch } from '@/api/fetcher';
+
+type MeResponse = {
+  id: string;
+};
 
 export default function BoardsPage() {
   const navigate = useNavigate();
@@ -14,6 +19,31 @@ export default function BoardsPage() {
   const { boards, loading, createBoard } = useBoards();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [meId, setMeId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const res = await apiFetch('/api/users/me');
+        if (!res.ok) return;
+        const data = (await res.json()) as MeResponse;
+        if (!cancelled) setMeId(data.id);
+      } catch {
+        // instentional
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ownerBoards = useMemo(() => {
+    if (!meId) return [];
+    return boards.filter((b) => b.owner_id === meId);
+  }, [boards, meId]);
 
   async function handleCreateBoard(payload: {
     title: string;
@@ -34,7 +64,7 @@ export default function BoardsPage() {
 
         <main className={styles.main}>
           <div className={styles.grid} aria-busy={loading}>
-            {boards.map((b) => {
+            {ownerBoards.map((b) => {
               const style = getBoardBackgroundStyle(b);
 
               return (

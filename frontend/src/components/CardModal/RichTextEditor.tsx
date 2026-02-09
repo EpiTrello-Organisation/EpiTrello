@@ -161,7 +161,9 @@ export default function RichTextEditor({ value, onSave, onCancel }: Props) {
         <button
           type="button"
           className={styles.formatHelpBtn}
-          onClick={() => window.open('https://commonmark.org/help/', '_blank', 'noopener,noreferrer')}
+          onClick={() =>
+            window.open('https://commonmark.org/help/', '_blank', 'noopener,noreferrer')
+          }
         >
           Formatting help
         </button>

@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import BoardTopBar from './BoardTopBar';
@@ -26,16 +27,25 @@ describe('components/BoardTopBar', () => {
     const onRename = vi.fn();
     const onDeleteBoard = vi.fn();
 
+    // NEW required filter props
+    const onToggleFilterMember = vi.fn();
+    const onClearFilter = vi.fn();
+
     const utils = render(
       <BoardTopBar
         title="My board"
         onRename={onRename}
         onDeleteBoard={onDeleteBoard}
+        // defaults for new required props
+        filterMembers={[]}
+        filterSelectedIds={[]}
+        onToggleFilterMember={onToggleFilterMember}
+        onClearFilter={onClearFilter}
         {...overrides}
       />,
     );
 
-    return { ...utils, onRename, onDeleteBoard };
+    return { ...utils, onRename, onDeleteBoard, onToggleFilterMember, onClearFilter };
   }
 
   it('renders base UI elements', () => {
@@ -43,10 +53,7 @@ describe('components/BoardTopBar', () => {
 
     expect(screen.getByRole('button', { name: /edit board title/i })).toBeTruthy();
 
-    expect(screen.getByLabelText(/board members/i)).toBeTruthy();
-
     expect(screen.getByRole('button', { name: /filter/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /change visibility/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /share/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /board menu/i })).toBeTruthy();
   });
@@ -70,20 +77,6 @@ describe('components/BoardTopBar', () => {
     fireEvent.click(screen.getByRole('button', { name: /board menu/i }));
     expect(screen.queryByRole('button', { name: /delete board/i })).toBeNull();
   });
-
-  //   it('clicking outside closes the menu when open', () => {
-  //     renderComp();
-
-  //     fireEvent.click(screen.getByRole('button', { name: /board menu/i }));
-  //     expect(screen.getByRole('button', { name: /delete board/i })).toBeTruthy();
-
-  //     const outside = document.createElement('div');
-  //     document.body.appendChild(outside);
-
-  //     firePointerDown(outside);
-
-  //     expect(screen.queryByRole('button', { name: /delete board/i })).toBeNull();
-  //   });
 
   it('clicking inside the menu wrapper does not close the menu', () => {
     const { container } = renderComp();

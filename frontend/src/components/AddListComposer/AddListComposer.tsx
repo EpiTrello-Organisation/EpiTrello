@@ -4,13 +4,7 @@ import styles from './AddListComposer.module.css';
 function IconX() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={styles.icon}>
-      <path
-        d="M7 7l10 10M17 7L7 17"
-        fill="none"
-        stroke="#fff"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
+      <path d="M7 7l10 10M17 7L7 17" fill="none" strokeWidth="1.4" strokeLinecap="round" />
     </svg>
   );
 }

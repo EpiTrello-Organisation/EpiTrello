@@ -38,6 +38,7 @@
   --editor-area: rgba(242, 244, 247, 1);
 
   --error: rgba(220, 38, 38, 1);
+  --success: rgba(22, 163, 74, 1);
 }
 
 :root[data-theme='dark'] {
@@ -76,4 +77,5 @@
   --editor-area: rgba(22, 23, 26, 1);
 
   --error: rgba(239, 68, 68, 1);
+  --success: rgba(22, 163, 74, 1);
 }

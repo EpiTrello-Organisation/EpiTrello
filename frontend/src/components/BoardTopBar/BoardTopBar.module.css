@@ -74,13 +74,13 @@
 }
 
 .topbarIconBtn:hover {
-  background: rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .icon {
   width: 20px;
   height: 20px;
-  color: var(--text);
+  fill: var(--text);
 }
 
 .shareBtn {
@@ -96,30 +96,6 @@
 
 .shareBtn:hover {
   background: var(--secondary-hover);
-}
-
-.avatars {
-  display: flex;
-  align-items: center;
-  margin-right: 2px;
-}
-
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  margin-left: -6px;
-}
-
-.avatar:first-child {
-  margin-left: 0;
 }
 
 .boardMenuWrapper {

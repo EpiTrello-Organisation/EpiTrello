@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user, get_db
+from app.models.board_member import BoardMember
 from app.models.card import Card
 from app.models.list import List
-from app.models.board_member import BoardMember
 from app.models.user import User
-from app.schemas.card import CardCreate, CardUpdate, CardOut
+from app.schemas.card import CardCreate, CardOut, CardUpdate
 
 router = APIRouter(prefix="/cards", tags=["Cards"])
+
 
 @router.post("/", response_model=CardOut, status_code=status.HTTP_201_CREATED)
 def create_card(
@@ -77,12 +79,8 @@ def list_cards(
     if not is_member:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    return (
-        db.query(Card)
-        .filter(Card.list_id == list_id)
-        .order_by(Card.position)
-        .all()
-    )
+    return db.query(Card).filter(Card.list_id == list_id).order_by(Card.position).all()
+
 
 @router.put("/{card_id}", response_model=CardOut)
 def update_card(
@@ -117,7 +115,6 @@ def update_card(
         card.list_id = card_in.list_id
     if card_in.label_ids is not None:
         card.label_ids = card_in.label_ids
-
 
     db.commit()
     db.refresh(card)

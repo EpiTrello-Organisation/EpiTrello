@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from uuid import UUID
 
-from app.api.deps import get_db, get_current_user, require_card_board_member
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user, get_db, require_card_board_member
 from app.models.board_member import BoardMember
 from app.models.card_member import CardMember
 from app.models.user import User
@@ -51,7 +52,9 @@ def add_card_member(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    card, board_id = require_card_board_member(card_id=card_id, db=db, current_user=current_user)
+    card, board_id = require_card_board_member(
+        card_id=card_id, db=db, current_user=current_user
+    )
 
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
@@ -66,7 +69,9 @@ def add_card_member(
         .first()
     )
     if not target_is_board_member:
-        raise HTTPException(status_code=400, detail="User is not a member of this board")
+        raise HTTPException(
+            status_code=400, detail="User is not a member of this board"
+        )
 
     exists = (
         db.query(CardMember)
@@ -77,7 +82,9 @@ def add_card_member(
         .first()
     )
     if exists:
-        raise HTTPException(status_code=400, detail="User already assigned to this card")
+        raise HTTPException(
+            status_code=400, detail="User already assigned to this card"
+        )
 
     cm = CardMember(card_id=card.id, user_id=user.id)
     db.add(cm)
@@ -92,7 +99,9 @@ def remove_card_member(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    card, _board_id = require_card_board_member(card_id=card_id, db=db, current_user=current_user)
+    card, _board_id = require_card_board_member(
+        card_id=card_id, db=db, current_user=current_user
+    )
 
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:

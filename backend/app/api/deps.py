@@ -1,16 +1,16 @@
+from uuid import UUID
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from uuid import UUID
-
 
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.models.user import User
 from app.models.board_member import BoardMember
-from app.models.list import List
 from app.models.card import Card
+from app.models.list import List
+from app.models.user import User
 
 security = HTTPBearer()
 
@@ -41,11 +41,11 @@ def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",
             )
-    except JWTError:
+    except JWTError as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
-        )
+        ) from err
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -55,10 +55,12 @@ def get_current_user(
         )
 
     return user
+
+
 def get_board_member(
     board_id: UUID,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ) -> BoardMember:
     member = (
         db.query(BoardMember)
@@ -81,7 +83,7 @@ def get_board_member(
 def require_board_owner(
     board_id: UUID,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ) -> BoardMember:
     member = (
         db.query(BoardMember)
@@ -100,6 +102,7 @@ def require_board_owner(
         )
 
     return member
+
 
 def require_card_board_member(
     card_id: UUID,

@@ -19,30 +19,30 @@ describe('components/SideMenu', () => {
     const aside = screen.getByLabelText(/sidebar/i);
     expect(aside).toBeTruthy();
 
-    const boardsLink = screen.getByRole('link', { name: /boards/i });
-    const templatesLink = screen.getByRole('link', { name: /templates/i });
+    const boardsLink = screen.getByRole('link', { name: /^boards$/i });
+    const otherBoardsLink = screen.getByRole('link', { name: /^other boards$/i });
 
     expect(boardsLink).toHaveAttribute('href', '/boards');
-    expect(templatesLink).toHaveAttribute('href', '/templates');
+    expect(otherBoardsLink).toHaveAttribute('href', '/other-boards');
   });
 
   it('marks Boards link as active when route is /boards', () => {
     renderWithRoute('/boards');
 
-    const boardsLink = screen.getByRole('link', { name: /boards/i });
-    const templatesLink = screen.getByRole('link', { name: /templates/i });
+    const boardsLink = screen.getByRole('link', { name: /^boards$/i });
+    const otherBoardsLink = screen.getByRole('link', { name: /^other boards$/i });
 
     expect(boardsLink.classList.contains(styles.active)).toBe(true);
-    expect(templatesLink.classList.contains(styles.active)).toBe(false);
+    expect(otherBoardsLink.classList.contains(styles.active)).toBe(false);
   });
 
-  it('marks Templates link as active when route is /templates', () => {
-    renderWithRoute('/templates');
+  it('marks Other Boards link as active when route is /other-boards', () => {
+    renderWithRoute('/other-boards');
 
-    const boardsLink = screen.getByRole('link', { name: /boards/i });
-    const templatesLink = screen.getByRole('link', { name: /templates/i });
+    const boardsLink = screen.getByRole('link', { name: /^boards$/i });
+    const otherBoardsLink = screen.getByRole('link', { name: /^other boards$/i });
 
-    expect(templatesLink.classList.contains(styles.active)).toBe(true);
+    expect(otherBoardsLink.classList.contains(styles.active)).toBe(true);
     expect(boardsLink.classList.contains(styles.active)).toBe(false);
   });
 

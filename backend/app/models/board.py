@@ -1,9 +1,12 @@
-from sqlalchemy import Column, String, ForeignKey, DateTime
+import uuid
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from datetime import datetime
-import uuid
+
 from app.core.database import Base
+
 
 class Board(Base):
     __tablename__ = "boards"
@@ -20,11 +23,8 @@ class Board(Base):
     background_value = Column(String, nullable=True)
     background_thumb_url = Column(String, nullable=True)
 
-
     members = relationship(
-        "BoardMember",
-        back_populates="board",
-        cascade="all, delete-orphan"
+        "BoardMember", back_populates="board", cascade="all, delete-orphan"
     )
 
     lists = relationship(
@@ -33,4 +33,3 @@ class Board(Base):
         cascade="all, delete-orphan",
         order_by="List.position",
     )
-

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import TopBar from './TopBar';
 
@@ -15,6 +15,28 @@ vi.mock('react-router-dom', async () => {
 vi.mock('@/auth/token', () => ({
   logout: vi.fn(),
 }));
+
+// ✅ mock useBoards + CreateBoardModal to avoid side effects / async updates noise
+vi.mock('@/hooks/useBoards', () => ({
+  useBoards: () => ({
+    boards: [],
+    loading: false,
+    createBoard: vi.fn(),
+  }),
+  getBoardBackgroundStyle: () => undefined,
+}));
+
+vi.mock('@/components/CreateBoardModal/CreateBoardModal', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+  return {
+    default: (props: any) =>
+      React.createElement(
+        'div',
+        { 'data-testid': 'CreateBoardModal' },
+        React.createElement('div', { 'data-testid': 'cbm-open' }, String(props.open)),
+      ),
+  };
+});
 
 const setPreferenceMock = vi.fn();
 vi.mock('@/theme/ThemeProvider', () => ({
@@ -37,6 +59,11 @@ beforeAll(() => {
   });
 });
 
+async function flushPromises() {
+  // flush pending state updates/microtasks
+  await act(async () => {});
+}
+
 function renderTopBar() {
   return render(
     <MemoryRouter>
@@ -50,11 +77,19 @@ describe('components/TopBar (theme aria-pressed)', () => {
     vi.clearAllMocks();
   });
 
-  it('theme buttons reflect preference via aria-pressed', () => {
+  it('theme buttons reflect preference via aria-pressed', async () => {
     renderTopBar();
+    await flushPromises();
 
-    fireEvent.click(screen.getByRole('button', { name: /profile/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^theme$/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /profile/i }));
+    });
+    await flushPromises();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^theme$/i }));
+    });
+    await flushPromises();
 
     const light = screen.getByRole('button', { name: /light/i });
     const dark = screen.getByRole('button', { name: /dark/i });
@@ -65,13 +100,24 @@ describe('components/TopBar (theme aria-pressed)', () => {
     expect(system.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('clicking a theme calls setPreference and closes menus', () => {
+  it('clicking a theme calls setPreference and closes menus', async () => {
     renderTopBar();
+    await flushPromises();
 
-    fireEvent.click(screen.getByRole('button', { name: /profile/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^theme$/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /profile/i }));
+    });
+    await flushPromises();
 
-    fireEvent.click(screen.getByRole('button', { name: /light/i }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^theme$/i }));
+    });
+    await flushPromises();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /light/i }));
+    });
+    await flushPromises();
 
     expect(setPreferenceMock).toHaveBeenCalledTimes(1);
     expect(setPreferenceMock).toHaveBeenCalledWith('light');

@@ -4,8 +4,10 @@ import styles from './CardModal.module.css';
 import type { CardModel } from '../BoardCard/BoardCard';
 import EditableText from '../EditableText/EditableText';
 import LabelsPopover from '../LabelsPopover/LabelsPopover';
+import MembersPopover, { type MemberItem } from '../MembersPopover/MembersPopover';
 import RichTextEditor from './RichTextEditor';
-import { TagIcon, CalendarIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline';
+import { TagIcon, UserIcon } from '@heroicons/react/24/outline';
+import { useMember } from '@/hooks/useMember';
 
 function IconDots() {
   return (
@@ -17,8 +19,17 @@ function IconDots() {
   );
 }
 
+function initialsForName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  const first = parts[0]?.[0] ?? 'U';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
+
 export default function CardModal({
   card,
+  boardId,
   onClose,
   onRename,
   onDeleteCard,
@@ -26,6 +37,7 @@ export default function CardModal({
   onEditDescription,
 }: {
   card: CardModel;
+  boardId?: string;
   onClose: () => void;
   onRename: (nextTitle: string) => void;
   onDeleteCard: () => void;
@@ -40,9 +52,20 @@ export default function CardModal({
   const [labelsOpen, setLabelsOpen] = useState(false);
   const labelsAnchorRef = useRef<HTMLDivElement | null>(null);
 
-  const [draftLabelIds, setDraftLabelIds] = useState<number[]>([]);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const membersAnchorRef = useRef<HTMLDivElement | null>(null);
 
+  const [draftLabelIds, setDraftLabelIds] = useState<number[]>([]);
   const [editingDescription, setEditingDescription] = useState(false);
+
+  const [boardMembers, setBoardMembers] = useState<MemberItem[]>([]);
+  const [cardMembers, setCardMembers] = useState<
+    { user_id: string; email: string; username: string }[]
+  >([]);
+
+  const [draftMemberIds, setDraftMemberIds] = useState<string[]>([]);
+
+  const { actions: memberActions } = useMember(boardId, card.id);
 
   const popoverLabels = useMemo(() => LABELS.map((l, idx) => ({ id: idx, color: l.color })), []);
 
@@ -50,9 +73,22 @@ export default function CardModal({
     .filter((id) => id >= 0 && id < LABELS.length)
     .map((id) => ({ id, color: LABELS[id].color }));
 
+  const selectedMemberIds = useMemo(() => draftMemberIds, [draftMemberIds]);
+
+  const activeMembers = useMemo(() => {
+    const set = new Set(selectedMemberIds);
+    return boardMembers.filter((m) => set.has(m.id));
+  }, [boardMembers, selectedMemberIds]);
+
   function toggleLabel(labelId: number) {
     setDraftLabelIds((prev) =>
       prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId],
+    );
+  }
+
+  function toggleDraftMember(userId: string) {
+    setDraftMemberIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
     );
   }
 
@@ -61,10 +97,49 @@ export default function CardModal({
   }, [card.id, card.label_ids]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        if (!boardId) {
+          setBoardMembers([]);
+          setCardMembers([]);
+          setDraftMemberIds([]);
+          return;
+        }
+
+        const [bm, cm] = await Promise.all([
+          memberActions.getBoardMembers(),
+          memberActions.getCardMembers(),
+        ]);
+
+        if (cancelled) return;
+
+        setBoardMembers(bm.map((m) => ({ id: m.user_id, username: m.username, email: m.email })));
+        setCardMembers(cm);
+
+        setDraftMemberIds(cm.map((m) => m.user_id));
+      } catch {
+        if (cancelled) return;
+        setBoardMembers([]);
+        setCardMembers([]);
+        setDraftMemberIds([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card.id, boardId]);
+
+  useEffect(() => {
+    setDraftMemberIds(cardMembers.map((m) => m.user_id));
+  }, [card.id, cardMembers]);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        // If the rich editor is open, let it close itself via its Cancel/Escape behavior.
-        // Otherwise close the modal.
         if (!editingDescription) onClose();
       }
     }
@@ -103,13 +178,13 @@ export default function CardModal({
   useEffect(() => {
     return () => {
       setLabelsOpen(false);
+      setMembersOpen(false);
     };
   }, []);
 
   async function closeLabelsPopover() {
     setLabelsOpen(false);
 
-    // évite les PUT inutiles
     const prev = card.label_ids ?? [];
     const next = draftLabelIds;
 
@@ -118,6 +193,50 @@ export default function CardModal({
     }
 
     onUpdateLabels(next);
+  }
+
+  async function closeMembersPopover() {
+    setMembersOpen(false);
+
+    if (!boardId) return;
+
+    const prevIds = new Set(cardMembers.map((m) => m.user_id));
+    const nextIds = new Set(draftMemberIds);
+
+    const toAddIds = draftMemberIds.filter((id) => !prevIds.has(id));
+    const toRemoveIds = cardMembers.map((m) => m.user_id).filter((id) => !nextIds.has(id));
+
+    if (toAddIds.length === 0 && toRemoveIds.length === 0) return;
+
+    try {
+      await Promise.all(
+        toAddIds.map(async (id) => {
+          const target = boardMembers.find((m) => m.id === id);
+          if (!target) return;
+          await memberActions.addCardMember(target.email);
+        }),
+      );
+
+      await Promise.all(
+        toRemoveIds.map(async (id) => {
+          const target = cardMembers.find((m) => m.user_id === id);
+          if (!target) return;
+          await memberActions.deleteCardMember(target.email);
+        }),
+      );
+
+      const next = await memberActions.getCardMembers();
+      setCardMembers(next);
+      // draft will resync via effect
+    } catch {
+      // keep UI stable: best-effort resync
+      try {
+        const next = await memberActions.getCardMembers();
+        setCardMembers(next);
+      } catch {
+        // ignore
+      }
+    }
   }
 
   return (
@@ -192,7 +311,10 @@ export default function CardModal({
                 labelsOpen ? styles.quickActionBtnActive : ''
               }`}
               type="button"
-              onClick={() => setLabelsOpen((v) => !v)}
+              onClick={() => {
+                setLabelsOpen((v) => !v);
+                setMembersOpen(false);
+              }}
               aria-haspopup="dialog"
               aria-expanded={labelsOpen}
             >
@@ -210,20 +332,36 @@ export default function CardModal({
             />
           </div>
 
-          <button className={styles.quickActionBtn} type="button">
-            <CalendarIcon className={styles.quickActionIcon} />
-            Dates
-          </button>
+          <div className={styles.quickActionWrapper} ref={membersAnchorRef}>
+            <button
+              className={`${styles.quickActionBtn} ${
+                membersOpen ? styles.quickActionBtnActive : ''
+              }`}
+              type="button"
+              onClick={() => {
+                setMembersOpen((v) => !v);
+                setLabelsOpen(false);
 
-          <button className={styles.quickActionBtn} type="button">
-            <CheckCircleIcon className={styles.quickActionIcon} />
-            Checklist
-          </button>
+                if (!membersOpen) setDraftMemberIds(cardMembers.map((m) => m.user_id));
+              }}
+              aria-haspopup="dialog"
+              aria-expanded={membersOpen}
+              disabled={!boardId}
+              aria-disabled={!boardId}
+            >
+              <UserIcon className={styles.quickActionIcon} />
+              Members
+            </button>
 
-          <button className={styles.quickActionBtn} type="button">
-            <UserIcon className={styles.quickActionIcon} />
-            Members
-          </button>
+            <MembersPopover
+              open={membersOpen}
+              anchorRef={membersAnchorRef}
+              onClose={closeMembersPopover}
+              members={boardMembers}
+              selectedIds={selectedMemberIds}
+              onToggle={toggleDraftMember}
+            />
+          </div>
         </div>
 
         {activeLabels.length > 0 && (
@@ -238,6 +376,23 @@ export default function CardModal({
                   style={{ background: l.color }}
                   aria-hidden="true"
                 />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeMembers.length > 0 && (
+          <div className={styles.membersCategory}>
+            <div className={styles.membersCategoryTitle}>Members</div>
+
+            <div className={styles.memberChips}>
+              {activeMembers.map((m) => (
+                <div key={m.id} className={styles.memberChip} title={m.email}>
+                  <div className={styles.memberChipAvatar} aria-hidden="true">
+                    {initialsForName(m.username)}
+                  </div>
+                  <div className={styles.memberChipName}>{m.username}</div>
+                </div>
               ))}
             </div>
           </div>

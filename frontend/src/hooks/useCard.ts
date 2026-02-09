@@ -277,7 +277,14 @@ export function useCard(boardId?: string, lists?: ListModel[]) {
     cardsByListId,
     loadingCards,
     api: { getCards, createCard, updateCard, removeCard },
-    actions: { addCard, renameCard, deleteCard, setCardLabelsLocal, updateCardLabels, editDescription },
+    actions: {
+      addCard,
+      renameCard,
+      deleteCard,
+      setCardLabelsLocal,
+      updateCardLabels,
+      editDescription,
+    },
     dnd: { moveCardBetweenListsPreview, commitCardsMove, reorderCards },
   };
 }
