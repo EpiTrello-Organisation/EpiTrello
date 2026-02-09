@@ -7,7 +7,6 @@ function IconX() {
       <path
         d="M7 7l10 10M17 7L7 17"
         fill="none"
-        stroke="#fff"
         strokeWidth="1.4"
         strokeLinecap="round"
       />

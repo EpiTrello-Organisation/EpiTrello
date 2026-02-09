@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import CardModal from '@/components/CardModal/CardModal';
@@ -10,6 +10,8 @@ import { useBoard } from '@/hooks/useBoard';
 import { useList } from '@/hooks/useList';
 import { useCard } from '@/hooks/useCard';
 import { useSortableLists } from '@/hooks/useSortableLists';
+import { useMember } from '@/hooks/useMember';
+import { apiFetch } from '@/api/fetcher';
 
 import styles from './BoardPage.module.css';
 
@@ -32,12 +34,13 @@ function gradientCssForKey(key?: string | null): string | null {
   }
 }
 
+type MemberItem = { id: string; username: string; email: string };
+
 export default function BoardPage() {
   const { boardId } = useParams();
   const navigate = useNavigate();
 
   const { board, loadingBoard, actions: boardActions } = useBoard(boardId);
-
   const { lists, loadingLists, actions: listActions, dnd: listDnd } = useList(boardId);
 
   const {
@@ -53,6 +56,104 @@ export default function BoardPage() {
   });
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+
+  const memberHook = useMember(boardId);
+
+  const [boardMembers, setBoardMembers] = useState<MemberItem[]>([]);
+  const [filterSelectedIds, setFilterSelectedIds] = useState<string[]>([]);
+
+  const [cardMembersByCardId, setCardMembersByCardId] = useState<Record<string, string[]>>({});
+  const [loadingCardMembers, setLoadingCardMembers] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMembers() {
+      if (!boardId) return;
+      try {
+        const ms = await memberHook.actions.getBoardMembers();
+        if (cancelled) return;
+
+        setBoardMembers(
+          (Array.isArray(ms) ? ms : []).map((m) => ({
+            id: m.user_id,
+            username: m.username,
+            email: m.email,
+          })),
+        );
+      } catch {
+        if (!cancelled) setBoardMembers([]);
+      }
+    }
+
+    loadMembers();
+    return () => {
+      cancelled = true;
+    };
+  }, [boardId, memberHook.actions]);
+
+  function toggleFilterMember(id: string) {
+    setFilterSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }
+
+  function clearFilter() {
+    setFilterSelectedIds([]);
+  }
+
+  async function fetchCardMemberIds(cardId: string): Promise<string[]> {
+    const res = await apiFetch(`/api/cards/${encodeURIComponent(cardId)}/members/`);
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = (await res.json()) as Array<{ user_id?: unknown }>;
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .map((x) => (typeof x?.user_id === 'string' ? x.user_id : null))
+      .filter((x): x is string => !!x);
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function ensureMembersForLoadedCards() {
+      if (filterSelectedIds.length === 0) {
+        setLoadingCardMembers(false);
+        return;
+      }
+
+      const allCards = Object.values(cardsByListId).flat();
+      const uniqueCardIds = Array.from(new Set(allCards.map((c) => c.id)));
+
+      const missing = uniqueCardIds.filter((id) => cardMembersByCardId[id] == null);
+      if (missing.length === 0) return;
+
+      setLoadingCardMembers(true);
+
+      try {
+        const entries = await Promise.all(
+          missing.map(async (cardId) => [cardId, await fetchCardMemberIds(cardId)] as const),
+        );
+
+        if (cancelled) return;
+
+        setCardMembersByCardId((prev) => ({
+          ...prev,
+          ...Object.fromEntries(entries),
+        }));
+      } finally {
+        if (!cancelled) setLoadingCardMembers(false);
+      }
+    }
+
+    ensureMembersForLoadedCards();
+    return () => {
+      cancelled = true;
+    };
+  }, [filterSelectedIds, cardsByListId, cardMembersByCardId]);
 
   const selectedCard = useMemo(() => {
     if (!selectedCardId) return null;
@@ -81,6 +182,26 @@ export default function BoardPage() {
     return undefined;
   }, [board]);
 
+  const filteredCardsByListId = useMemo(() => {
+    if (filterSelectedIds.length === 0) return cardsByListId;
+
+    const want = new Set(filterSelectedIds);
+
+    const next: Record<string, (typeof cardsByListId)[string]> = {};
+
+    for (const [listId, cards] of Object.entries(cardsByListId)) {
+      next[listId] = (cards ?? []).filter((c) => {
+        const ids = cardMembersByCardId[c.id];
+
+        if (!ids) return true;
+
+        return ids.some((id) => want.has(id));
+      });
+    }
+
+    return next;
+  }, [cardsByListId, filterSelectedIds, cardMembersByCardId]);
+
   return (
     <div className={styles.page} style={pageStyle}>
       <TopBar />
@@ -93,13 +214,22 @@ export default function BoardPage() {
           const ok = await boardActions.deleteBoard();
           if (ok) navigate('/boards');
         }}
+        filterMembers={boardMembers}
+        filterSelectedIds={filterSelectedIds}
+        onToggleFilterMember={toggleFilterMember}
+        onClearFilter={clearFilter}
       />
 
       <div className={styles.kanban}>
         <BoardKanban
           lists={lists}
-          cardsByListId={cardsByListId}
-          loading={loadingBoard || loadingLists || loadingCards}
+          cardsByListId={filteredCardsByListId}
+          loading={
+            loadingBoard ||
+            loadingLists ||
+            loadingCards ||
+            (filterSelectedIds.length > 0 && loadingCardMembers)
+          }
           sensors={sensors}
           onDragEnd={onDragEnd}
           onRenameList={listActions.renameList}

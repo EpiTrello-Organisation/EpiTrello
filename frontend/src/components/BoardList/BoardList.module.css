@@ -181,7 +181,7 @@
   border-radius: 10px;
 
   background: var(--primary);
-  color: #0b1220;
+  color: var(--text-inverse);
 
   font-size: 14px;
   font-weight: 700;
