@@ -1,4 +1,3 @@
-// src/components/FilterMembersModal/FilterMembersModal.tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './FilterMembersModal.module.css';
 import { XMarkIcon } from '@heroicons/react/24/outline';
