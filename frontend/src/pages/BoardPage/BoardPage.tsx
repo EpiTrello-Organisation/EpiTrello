@@ -95,21 +95,23 @@ export default function BoardPage() {
         }}
       />
 
-      <BoardKanban
-        lists={lists}
-        cardsByListId={cardsByListId}
-        loading={loadingBoard || loadingLists || loadingCards}
-        sensors={sensors}
-        onDragEnd={onDragEnd}
-        onRenameList={listActions.renameList}
-        onDeleteList={listActions.deleteList}
-        onAddCard={cardActions.addCard}
-        onOpenCard={(card) => setSelectedCardId(card.id)}
-        onAddList={listActions.addList}
-        listsRowClassName={styles.listsRow}
-        onMoveCardBetweenLists={cardDnd.moveCardBetweenListsPreview}
-        onCommitCards={cardDnd.commitCardsMove}
-      />
+      <div className={styles.kanban}>
+        <BoardKanban
+          lists={lists}
+          cardsByListId={cardsByListId}
+          loading={loadingBoard || loadingLists || loadingCards}
+          sensors={sensors}
+          onDragEnd={onDragEnd}
+          onRenameList={listActions.renameList}
+          onDeleteList={listActions.deleteList}
+          onAddCard={cardActions.addCard}
+          onOpenCard={(card) => setSelectedCardId(card.id)}
+          onAddList={listActions.addList}
+          listsRowClassName={styles.listsRow}
+          onMoveCardBetweenLists={cardDnd.moveCardBetweenListsPreview}
+          onCommitCards={cardDnd.commitCardsMove}
+        />
+      </div>
 
       {selectedCard && (
         <CardModal
