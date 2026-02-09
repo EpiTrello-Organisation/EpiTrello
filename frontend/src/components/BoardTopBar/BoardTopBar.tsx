@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './BoardTopBar.module.css';
 import EditableText from '../EditableText/EditableText';
+import ShareModal from '../ShareModal/ShareModal';
 
 export default function BoardTopBar({
   title,
@@ -12,6 +13,7 @@ export default function BoardTopBar({
   onDeleteBoard: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const menuWrapperRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -81,7 +83,12 @@ export default function BoardTopBar({
           </svg>
         </button>
 
-        <button type="button" className={styles.shareBtn} aria-label="Share">
+        <button
+          type="button"
+          className={styles.shareBtn}
+          aria-label="Share"
+          onClick={() => setShareOpen(true)}
+        >
           + Share
         </button>
 
@@ -116,6 +123,8 @@ export default function BoardTopBar({
           )}
         </div>
       </div>
+
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   );
 }
