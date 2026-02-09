@@ -198,5 +198,103 @@
 
   line-height: 24px;
   box-sizing: border-box;
+}
 
+.kickBtn {
+  height: 28px;
+  width: 28px;
+  margin-left: 8px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 8px;
+  border: 1px solid var(--border);
+
+  background: transparent;
+  color: var(--text-subtle);
+
+  cursor: pointer;
+}
+
+.kickBtn:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.kickBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kickBtn:disabled:hover {
+  border-color: var(--border);
+  color: var(--text-subtle);
+}
+
+.kickIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.confirmBackdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  padding: 200px 24px 24px;
+  place-items: center;
+  z-index: 6000;
+}
+
+.confirmDialog {
+  width: min(360px, calc(100vw - 48px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+}
+
+.confirmTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.confirmText {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirmBtn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirmBtn:hover {
+  background: var(--surface-hover);
+}
+
+.confirmBtnDanger {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.confirmBtnDanger:hover {
+  background: var(--surface-hover);
 }

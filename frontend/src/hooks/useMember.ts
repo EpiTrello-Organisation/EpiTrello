@@ -29,7 +29,7 @@ async function readDetail(res: Response): Promise<string> {
     const data = (await res.json()) as { detail?: unknown };
     if (typeof data?.detail === 'string') return data.detail;
   } catch {
-    // ignore
+    // intentionnal
   }
 
   try {
@@ -98,12 +98,41 @@ export function useMember(boardId?: string) {
     [boardId],
   );
 
+  const deleteMember = useCallback(
+    async (email: string): Promise<void> => {
+      if (!boardId) throw new Error('boardId is required to delete a member');
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await apiFetch(`/api/boards/${encodeURIComponent(boardId)}/members/`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        if (res.status === 204) return;
+
+        const detail = await readDetail(res);
+        throw new ApiError(res.status, detail);
+      } catch (err) {
+        setError(err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [boardId],
+  );
+
   return {
     loading,
     error,
     actions: {
       getMembers,
       addMember,
+      deleteMember,
     },
   };
 }
