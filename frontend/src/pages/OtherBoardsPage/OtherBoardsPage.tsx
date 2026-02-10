@@ -49,25 +49,29 @@ export default function OtherBoardsPage() {
         <SideMenu />
 
         <main className={styles.main}>
-          <div className={styles.grid} aria-busy={loading}>
-            {memberBoards.map((b) => {
-              const style = getBoardBackgroundStyle(b);
+          {!loading && memberBoards.length === 0 ? (
+            <div className={styles.empty}>Nobody has invited you to any of their boards yet.</div>
+          ) : (
+            <div className={styles.grid} aria-busy={loading}>
+              {memberBoards.map((b) => {
+                const style = getBoardBackgroundStyle(b);
 
-              return (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={styles.card}
-                  onClick={() => navigate(`/boards/${b.id}`)}
-                >
-                  <div className={styles.preview} style={style} />
-                  <div className={styles.titleBar}>
-                    <span className={styles.title}>{b.title}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    className={styles.card}
+                    onClick={() => navigate(`/boards/${b.id}`)}
+                  >
+                    <div className={styles.preview} style={style} />
+                    <div className={styles.titleBar}>
+                      <span className={styles.title}>{b.title}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </main>
       </div>
     </div>
