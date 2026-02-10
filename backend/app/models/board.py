@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -17,7 +17,7 @@ class Board(Base):
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="owned_boards")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     background_kind = Column(String, nullable=False, default="gradient")
     background_value = Column(String, nullable=True)

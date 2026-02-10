@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './ShareModal.module.css';
-import {
-  XMarkIcon,
-  UserCircleIcon,
-  ArrowRightStartOnRectangleIcon,
-} from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowRightStartOnRectangleIcon } from '@heroicons/react/24/outline';
 import { apiFetch } from '@/api/fetcher';
 import { useMember, type BoardMemberApi } from '@/hooks/useMember';
 
@@ -16,6 +12,14 @@ export type ShareMember = {
 };
 
 type InlineMessage = { text: string; tone: 'error' | 'success' } | null;
+
+function initialsForName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  const first = parts[0]?.[0] ?? 'U';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
 
 function normalizeEmail(v: string) {
   return v.trim().toLowerCase();
@@ -309,7 +313,9 @@ export default function ShareModal({
 
             return (
               <div key={m.id} className={styles.member} role="listitem">
-                <UserCircleIcon className={styles.memberIcon} aria-hidden="true" />
+                <div className={styles.memberAvatar} aria-hidden="true">
+                  {initialsForName(m.username)}
+                </div>
 
                 <div className={styles.memberInfo}>
                   <div className={styles.memberName}>{m.username}</div>

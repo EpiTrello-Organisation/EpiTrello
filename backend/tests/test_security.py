@@ -1,6 +1,6 @@
 """Tests for core security helpers (hashing, JWT)."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from jose import jwt
@@ -59,8 +59,8 @@ class TestJWT:
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
         )
-        exp = datetime.utcfromtimestamp(payload["exp"])
-        assert exp > datetime.utcnow()
+        exp = datetime.fromtimestamp(payload["exp"], UTC)
+        assert exp > datetime.now(UTC)
 
     def test_decode_with_wrong_secret_fails(self):
         token = create_access_token("user-123")
