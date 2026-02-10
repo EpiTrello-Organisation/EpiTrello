@@ -23,7 +23,9 @@ export function useBoard(boardId?: string) {
 
   async function updateBoard(
     id: string,
-    payload: Partial<Pick<BoardModel, 'title'>>,
+    payload: Partial<
+      Pick<BoardModel, 'title' | 'background_kind' | 'background_value' | 'background_thumb_url'>
+    >,
   ): Promise<void> {
     await apiFetch(`/api/boards/${encodeURIComponent(id)}`, {
       method: 'PUT',
@@ -87,7 +89,31 @@ export function useBoard(boardId?: string) {
     }
   }
 
-  const actions = { renameBoard, deleteBoard };
+  async function changeBackground(payload: {
+    background_kind: BoardBackgroundKind;
+    background_value: string;
+    background_thumb_url?: string | null;
+  }) {
+    if (!boardId) return;
+
+    const prev = board
+      ? {
+          background_kind: board.background_kind,
+          background_value: board.background_value,
+          background_thumb_url: board.background_thumb_url,
+        }
+      : null;
+
+    setBoard((b) => (b ? { ...b, ...payload } : b));
+
+    try {
+      await api.updateBoard(boardId, payload);
+    } catch {
+      if (prev) setBoard((b) => (b ? { ...b, ...prev } : b));
+    }
+  }
+
+  const actions = { renameBoard, deleteBoard, changeBackground };
 
   return {
     board,

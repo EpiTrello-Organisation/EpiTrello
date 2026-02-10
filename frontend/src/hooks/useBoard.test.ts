@@ -154,4 +154,75 @@ describe('hooks/useBoard', () => {
     expect(ok).toBe(false);
     expect(apiFetch).not.toHaveBeenCalled();
   });
+
+  it('changeBackground updates board optimistically and calls PUT', async () => {
+    (apiFetch as any).mockResolvedValueOnce(makeResJson(BOARD));
+
+    const { result } = renderHook(() => useBoard('b1'));
+    await waitFor(() => expect(result.current.loadingBoard).toBe(false));
+
+    (apiFetch as any).mockResolvedValueOnce({ ok: true });
+
+    await act(async () => {
+      await result.current.actions.changeBackground({
+        background_kind: 'gradient',
+        background_value: 'g-3',
+        background_thumb_url: null,
+      });
+    });
+
+    expect(result.current.board?.background_kind).toBe('gradient');
+    expect(result.current.board?.background_value).toBe('g-3');
+
+    expect(apiFetch).toHaveBeenLastCalledWith('/api/boards/b1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        background_kind: 'gradient',
+        background_value: 'g-3',
+        background_thumb_url: null,
+      }),
+    });
+  });
+
+  it('changeBackground rolls back on PUT failure', async () => {
+    const boardWithBg: BoardModel = {
+      ...BOARD,
+      background_kind: 'gradient',
+      background_value: 'g-1',
+      background_thumb_url: null,
+    };
+    (apiFetch as any).mockResolvedValueOnce(makeResJson(boardWithBg));
+
+    const { result } = renderHook(() => useBoard('b1'));
+    await waitFor(() => expect(result.current.loadingBoard).toBe(false));
+
+    (apiFetch as any).mockRejectedValueOnce(new Error('PUT failed'));
+
+    await act(async () => {
+      await result.current.actions.changeBackground({
+        background_kind: 'unsplash',
+        background_value: 'img-2',
+        background_thumb_url: 'https://example.com/img.jpg',
+      });
+    });
+
+    // Should roll back to original values
+    expect(result.current.board?.background_kind).toBe('gradient');
+    expect(result.current.board?.background_value).toBe('g-1');
+  });
+
+  it('changeBackground no-ops when boardId is missing', async () => {
+    const { result } = renderHook(() => useBoard(undefined));
+
+    await act(async () => {
+      await result.current.actions.changeBackground({
+        background_kind: 'gradient',
+        background_value: 'g-1',
+        background_thumb_url: null,
+      });
+    });
+
+    expect(apiFetch).not.toHaveBeenCalled();
+  });
 });

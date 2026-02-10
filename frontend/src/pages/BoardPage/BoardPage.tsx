@@ -240,6 +240,8 @@ export default function BoardPage() {
           const ok = await boardActions.deleteBoard();
           if (ok) navigate('/boards');
         }}
+        onChangeBg={boardActions.changeBackground}
+        currentBgId={board?.background_value}
         filterMembers={boardMembers}
         filterSelectedIds={filterSelectedIds}
         onToggleFilterMember={toggleFilterMember}
