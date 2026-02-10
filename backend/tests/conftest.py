@@ -7,7 +7,7 @@ Every test function gets a fresh DB and a fresh FastAPI TestClient.
 
 import json
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import String, Text, create_engine, event
@@ -177,7 +177,7 @@ def make_board(db):
             background_kind=kwargs.get("background_kind", "gradient"),
             background_value=kwargs.get("background_value"),
             background_thumb_url=kwargs.get("background_thumb_url"),
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         db.add(board)
         db.flush()
@@ -235,7 +235,7 @@ def make_card(db):
             list_id=list_obj.id,
             creator_id=creator.id,
             label_ids=label_ids if label_ids is not None else [],
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         db.add(card)
         db.commit()

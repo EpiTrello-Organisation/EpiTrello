@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
@@ -23,7 +23,7 @@ class Card(Base):
 
     label_ids = Column(ARRAY(Integer), nullable=False, default=list)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     list = relationship("List", back_populates="cards")
     creator = relationship("User")

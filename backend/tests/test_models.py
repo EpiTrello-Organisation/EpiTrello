@@ -1,7 +1,7 @@
 """Tests for SQLAlchemy models."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -67,7 +67,7 @@ class TestBoardModel:
             id=uuid.uuid4(),
             title="Test Board",
             owner_id=user_alice.id,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         db.add(board)
         db.commit()
@@ -172,7 +172,7 @@ class TestCardModel:
             list_id=lst.id,
             creator_id=user_alice.id,
             label_ids=[],
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         db.add(card)
         db.commit()
