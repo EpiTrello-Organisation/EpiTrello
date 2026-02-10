@@ -13,3 +13,4 @@ python-jose[cryptography]
 pytest
 pytest-cov
 httpx
+ruff
