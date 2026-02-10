@@ -120,16 +120,14 @@ export default function BoardPage() {
     let cancelled = false;
 
     async function ensureMembersForLoadedCards() {
-      if (filterSelectedIds.length === 0) {
-        setLoadingCardMembers(false);
-        return;
-      }
-
       const allCards = Object.values(cardsByListId).flat();
       const uniqueCardIds = Array.from(new Set(allCards.map((c) => c.id)));
 
       const missing = uniqueCardIds.filter((id) => cardMembersByCardId[id] == null);
-      if (missing.length === 0) return;
+      if (missing.length === 0) {
+        setLoadingCardMembers(false);
+        return;
+      }
 
       setLoadingCardMembers(true);
 
@@ -153,7 +151,7 @@ export default function BoardPage() {
     return () => {
       cancelled = true;
     };
-  }, [filterSelectedIds, cardsByListId, cardMembersByCardId]);
+  }, [cardsByListId, cardMembersByCardId]);
 
   const selectedCard = useMemo(() => {
     if (!selectedCardId) return null;
@@ -182,14 +180,42 @@ export default function BoardPage() {
     return undefined;
   }, [board]);
 
-  const filteredCardsByListId = useMemo(() => {
-    if (filterSelectedIds.length === 0) return cardsByListId;
+  const boardMembersById = useMemo(() => {
+    const map = new Map<string, { username: string; email: string }>();
+    for (const m of boardMembers) map.set(m.id, { username: m.username, email: m.email });
+    return map;
+  }, [boardMembers]);
 
-    const want = new Set(filterSelectedIds);
-
+  const enrichedCardsByListId = useMemo(() => {
     const next: Record<string, (typeof cardsByListId)[string]> = {};
 
     for (const [listId, cards] of Object.entries(cardsByListId)) {
+      next[listId] = (cards ?? []).map((c) => {
+        const memberIds = cardMembersByCardId[c.id];
+        if (!memberIds || memberIds.length === 0) return c;
+        return {
+          ...c,
+          members: memberIds
+            .map((uid) => {
+              const info = boardMembersById.get(uid);
+              return info ? { user_id: uid, username: info.username } : null;
+            })
+            .filter((m): m is NonNullable<typeof m> => m !== null),
+        };
+      });
+    }
+
+    return next;
+  }, [cardsByListId, cardMembersByCardId, boardMembersById]);
+
+  const filteredCardsByListId = useMemo(() => {
+    if (filterSelectedIds.length === 0) return enrichedCardsByListId;
+
+    const want = new Set(filterSelectedIds);
+
+    const next: Record<string, (typeof enrichedCardsByListId)[string]> = {};
+
+    for (const [listId, cards] of Object.entries(enrichedCardsByListId)) {
       next[listId] = (cards ?? []).filter((c) => {
         const ids = cardMembersByCardId[c.id];
 
@@ -200,7 +226,7 @@ export default function BoardPage() {
     }
 
     return next;
-  }, [cardsByListId, filterSelectedIds, cardMembersByCardId]);
+  }, [enrichedCardsByListId, filterSelectedIds, cardMembersByCardId]);
 
   return (
     <div className={styles.page} style={pageStyle}>
@@ -247,7 +273,15 @@ export default function BoardPage() {
         <CardModal
           card={selectedCard}
           boardId={boardId}
-          onClose={() => setSelectedCardId(null)}
+          onClose={() => {
+            setSelectedCardId(null);
+            // Invalidate card members cache so avatars refresh
+            setCardMembersByCardId((prev) => {
+              const next = { ...prev };
+              delete next[selectedCard.id];
+              return next;
+            });
+          }}
           onRename={(nextTitle) =>
             cardActions.renameCard(selectedCard.id, selectedCard.list_id, nextTitle)
           }
