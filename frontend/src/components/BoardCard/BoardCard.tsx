@@ -1,6 +1,11 @@
 import styles from './BoardCard.module.css';
 import { LABELS } from '@/constants/labels';
 
+export type CardMember = {
+  user_id: string;
+  username: string;
+};
+
 export type CardModel = {
   id: string;
   title: string;
@@ -10,7 +15,16 @@ export type CardModel = {
   creator_id: string;
   created_at: string;
   label_ids: number[];
+  members?: CardMember[];
 };
+
+function initialsForName(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'U';
+  const first = parts[0]?.[0] ?? 'U';
+  const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '';
+  return (first + last).toUpperCase();
+}
 
 export default function BoardCard({ card, onOpen }: { card: CardModel; onOpen: () => void }) {
   const onIds = new Set<number>(card.label_ids ?? []);
@@ -18,6 +32,8 @@ export default function BoardCard({ card, onOpen }: { card: CardModel; onOpen: (
   const activeLabels = LABELS.map((l, idx) => ({ id: idx, color: l.color })).filter((l) =>
     onIds.has(l.id),
   );
+
+  const members = card.members ?? [];
 
   return (
     <button
@@ -35,6 +51,21 @@ export default function BoardCard({ card, onOpen }: { card: CardModel; onOpen: (
       )}
 
       <div className={styles.title}>{card.title}</div>
+
+      {members.length > 0 && (
+        <div className={styles.members}>
+          {members.map((m) => (
+            <span
+              key={m.user_id}
+              className={styles.memberAvatar}
+              title={m.username}
+              aria-label={m.username}
+            >
+              {initialsForName(m.username)}
+            </span>
+          ))}
+        </div>
+      )}
     </button>
   );
 }

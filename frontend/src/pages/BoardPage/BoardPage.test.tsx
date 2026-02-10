@@ -363,7 +363,10 @@ describe('pages/BoardPage', () => {
     await flushEffects();
     fireEvent.click(screen.getByRole('button', { name: 'OPEN_CARD' }));
 
-    fireEvent.click(screen.getByRole('button', { name: 'CLOSE_MODAL' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'CLOSE_MODAL' }));
+    });
+    await flushEffects();
     expect(screen.queryByTestId('CardModal')).toBeNull();
   });
 

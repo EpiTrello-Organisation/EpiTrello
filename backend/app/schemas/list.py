@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class ListBase(BaseModel):
@@ -17,9 +17,8 @@ class ListUpdate(BaseModel):
 
 
 class ListOut(ListBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     position: int
     board_id: UUID
-
-    class Config:
-        from_attributes = True

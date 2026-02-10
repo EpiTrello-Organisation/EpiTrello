@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CardBase(BaseModel):
@@ -22,12 +22,11 @@ class CardUpdate(BaseModel):
 
 
 class CardOut(CardBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     position: int
     list_id: UUID
     creator_id: UUID
     created_at: datetime
     label_ids: list[int]
-
-    class Config:
-        from_attributes = True
