@@ -1,0 +1,156 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  left: 0;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 50;
+}
+
+.panel {
+  width: 300px;
+  max-width: calc(100vw - 24px);
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+}
+
+.header {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.headerTitle {
+  color: #d8d8dd;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.closeButton {
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 0;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: var(--surface-hover);
+}
+
+.preview {
+  margin: 8px 12px 0;
+  height: 120px;
+  border-radius: 8px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.previewMock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.mockCol {
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mockLine,
+.mockLineShort {
+  height: 6px;
+  background: var(--text);
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.mockLineShort {
+  width: 70%;
+  opacity: 0.55;
+}
+
+.mockCard {
+  height: 52px;
+  background: var(--text);
+  border-radius: 6px;
+  opacity: 0.9;
+}
+
+.section {
+  padding: 10px 12px 0;
+}
+
+.sectionTitle {
+  color: var(--text-subtle);
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.bgGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bgGrid2 {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.bgTile {
+  height: 38px;
+  border-radius: 8px;
+  border: none;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  outline: none;
+}
+
+.bgTileActive {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.colorTile {
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.colorTileActive {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.bottomPad {
+  height: 12px;
+}

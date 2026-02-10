@@ -6,12 +6,15 @@ import ShareModal from '../ShareModal/ShareModal';
 import FilterMembersModal, {
   type FilterMemberItem,
 } from '../FilterMembersModal/FilterMembersModal';
+import ChangeBgModal, { type ChangeBgPayload } from '../ChangeBgModal/ChangeBgModal';
 
 export default function BoardTopBar({
   boardId,
   title,
   onRename,
   onDeleteBoard,
+  onChangeBg,
+  currentBgId,
 
   // NEW
   filterMembers,
@@ -23,6 +26,8 @@ export default function BoardTopBar({
   title: string;
   onRename: (nextTitle: string) => void;
   onDeleteBoard: () => void;
+  onChangeBg: (payload: ChangeBgPayload) => void;
+  currentBgId?: string | null;
 
   // NEW
   filterMembers: FilterMemberItem[];
@@ -32,6 +37,7 @@ export default function BoardTopBar({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [changeBgOpen, setChangeBgOpen] = useState(false);
 
   // NEW
   const [filterOpen, setFilterOpen] = useState(false);
@@ -124,6 +130,16 @@ export default function BoardTopBar({
             <div className={styles.boardMenu}>
               <button
                 type="button"
+                className={styles.boardMenuItem}
+                onClick={() => {
+                  setMenuOpen(false);
+                  setChangeBgOpen(true);
+                }}
+              >
+                Change background
+              </button>
+              <button
+                type="button"
                 className={styles.boardMenuItemDanger}
                 onClick={() => {
                   setMenuOpen(false);
@@ -138,6 +154,14 @@ export default function BoardTopBar({
       </div>
 
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} boardId={boardId} />
+      <ChangeBgModal
+        open={changeBgOpen}
+        currentBgId={currentBgId}
+        onClose={() => setChangeBgOpen(false)}
+        onSelect={(payload) => {
+          onChangeBg(payload);
+        }}
+      />
     </div>
   );
 }
